@@ -1,7 +1,7 @@
 # MIE_Diarization
 This is a Diarization and summarization project, which uses the Pyannote segmentation model along with NeMo diarization components (embeddings and clustering), and Faster-Whisper for transcription. For summarization I've used Ozwell Ai which is an AI agent for the MIE.
 
-This project is my summer internship work, which I've worked on alone.
+This project is my summer internship work, which I've worked on as sole member.
 
 Below are some shorts/videos about the project and my research:
 ## 🎬 Project Shorts
@@ -15,11 +15,7 @@ Below are some shorts/videos about the project and my research:
 
 Below is the description for running the diarization pipeline. This work couldn't have been possible without the project of diarization from https://github.com/MahmoudAshraf97/whisper-diarization
 
-<h1 align="center">Speaker Diarization Using OpenAI Whisper</h1>
-
-
-# 
-Speaker Diarization pipeline based on OpenAI Whisper
+<h1 align="center">Speaker Diarization using NEMO + Pyannote Pipeline using OPEN AI Whisper</h1>
 
 <img src="https://github.blog/wp-content/uploads/2020/09/github-stars-logo_Color.png" alt="drawing" width="25"/> **Please, star the project on github (see top-right corner) if you appreciate my contribution to the community!**
 
@@ -69,6 +65,7 @@ If you don’t want to run it locally, you can try the hosted version here:
 ## Known Limitations
 - Overlapping speakers are yet to be addressed, a possible approach would be to separate the audio file and isolate only one speaker, then feed it into the pipeline but this will need much more computation
 - There might be some errors, please raise an issue if you encounter any.
+- There can be situation where the model may hallucinate when creating summary.
 
 ## Future Improvements
 - Improve overlapping of the audio

@@ -9,7 +9,7 @@ Below are some shorts/videos about the project and my research:
 | 🎥 Topic                                                  | 🔗 Watch                                                                 |
 |-----------------------------------------------------------|--------------------------------------------------------------------------|
 | 📊 **Full Project Overview**                              | [Watch on YouTube](https://youtube.com/shorts/aS2HU26QRXU?si=piUQbxEMDIeN3q_) |
-| 📈 **Pipeline Sequence Diagram Explained**                | [Watch on YouTube](https://www.youtube.com/shorts/YQj7j3qZjcw)           |
+| 📈 **Pipeline Sequence Diagram Explained**                | [Watch on YouTube](https://youtu.be/2UFZsiDDGJg?si=Y6SaWHJaM2THGdCh)           |
 | ⚙️ **Hyperparameters Walkthrough**                        | [Watch on YouTube](https://youtube.com/shorts/heUgx4hOj-k?si=TEbm6r_HaTvYDcDn) |
 | 🤖 **Whisper Model Comparison & Faster-Whisper Insights** | [Watch on YouTube](https://youtube.com/shorts/H21NiwoXnQg?si=Sqt_Jc2ZTt-Qgu5x) |
 

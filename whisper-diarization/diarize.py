@@ -372,6 +372,19 @@ with open(f"{os.path.splitext(args.audio)[0]}.srt", "w", encoding="utf-8-sig") a
 
 # --- JSON export (OpenAI-style envelope with diarization extras) ---
 
+def _as_seconds(val):
+    try:
+        v = float(val)
+    except Exception:
+        return 0.0
+    # if it looks like milliseconds, convert to seconds
+    return v / 1000.0 if v > 1000.0 else v
+def _word_time(w, *keys):
+    for k in keys:
+        if k in w and w[k] is not None:
+            return _as_seconds(w[k])
+    return 0.0
+
 def _segment_speaker(seg, words):
     """
     Determine the dominant speaker for a Whisper segment by accumulating
@@ -387,8 +400,8 @@ def _segment_speaker(seg, words):
         end = float(getattr(seg, "end", 0.0) or seg.get("end", 0.0))
     duration_by_speaker = {}
     for w in words:
-        ws = float(w.get("start", 0.0))
-        we = float(w.get("end", 0.0))
+        ws = _word_time(w, "start", "start_time", "start_ms", "ts_start")
+        we = _word_time(w, "end", "end_time", "end_ms", "ts_end")
         sp = w.get("speaker", None)
         if sp is None:
             continue
@@ -414,12 +427,17 @@ for i, seg in enumerate(transcript_segments or []):
 # Build words list (already contains speaker from wsm)
 words_json = []
 for w in (wsm or []):
+    ws = _word_time(w, "start", "start_time", "start_ms", "ts_start")
+    we = _word_time(w, "end", "end_time", "end_ms", "ts_end")
     words_json.append({
         "word": w.get("word"),
-        "start": float(w.get("start", 0.0)),
-        "end": float(w.get("end", 0.0)),
+        "start": ws,
+        "end": we,
         "speaker": w.get("speaker", None)
     })
+
+if words_json:
+    print("[DEBUG] Sample words with times:", words_json[:5])
 
 # Collect speakers and construct payload
 unique_speakers = sorted({w.get("speaker") for w in (wsm or []) if w.get("speaker") is not None})

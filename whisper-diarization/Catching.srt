@@ -7,58 +7,62 @@ Speaker 0: Jane?
 Speaker 1: Mark?
 
 3
-00:00:02,980 --> 00:00:06,020
-Speaker 1: Hi, it's been ages since I last saw you.
+00:00:02,980 --> 00:00:03,640
+Speaker 1: Hi!
 
 4
+00:00:03,920 --> 00:00:06,020
+Speaker 1: It's been ages since I last saw you.
+
+5
 00:00:06,800 --> 00:00:08,100
 Speaker 1: How are you and Jackie?
 
-5
+6
 00:00:08,540 --> 00:00:09,420
 Speaker 0: Yeah, good thanks.
 
-6
+7
 00:00:10,100 --> 00:00:12,300
 Speaker 1: And your new baby, George, isn't it?
 
-7
+8
 00:00:13,160 --> 00:00:13,980
 Speaker 0: You've got a good memory.
 
-8
+9
 00:00:14,440 --> 00:00:15,420
 Speaker 0: Yes, he's two now.
 
-9
+10
 00:00:15,940 --> 00:00:16,420
 Speaker 0: What about you?
 
-10
+11
 00:00:16,840 --> 00:00:18,260
 Speaker 0: Are you still working in the health centre?
 
-11
+12
 00:00:19,060 --> 00:00:22,440
 Speaker 1: Yes, for the time being, but we're moving in a couple of months.
 
-12
+13
 00:00:23,300 --> 00:00:24,220
 Speaker 1: Anyhow, I'd better go.
 
-13
+14
 00:00:24,460 --> 00:00:25,320
 Speaker 1: I'm late for work.
 
-14
+15
 00:00:25,960 --> 00:00:27,200
 Speaker 1: Lovely to see you again.
 
-15
+16
 00:00:27,860 --> 00:00:28,740
 Speaker 0: Yeah, likewise.
 
-16
+17
 00:00:29,000 --> 00:00:30,980
 Speaker 0: Keep in touch.
 

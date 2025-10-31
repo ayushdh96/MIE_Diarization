@@ -370,4 +370,77 @@ with open(f"{os.path.splitext(args.audio)[0]}.txt", "w", encoding="utf-8-sig") a
 with open(f"{os.path.splitext(args.audio)[0]}.srt", "w", encoding="utf-8-sig") as srt:
     write_srt(ssm, srt)
 
+# --- JSON export (OpenAI-style envelope with diarization extras) ---
+
+def _segment_speaker(seg, words):
+    """
+    Determine the dominant speaker for a Whisper segment by accumulating
+    word-level speaking duration within the segment window.
+    Returns speaker label (e.g., 'SPEAKER_0') or None.
+    """
+    try:
+        start = float(seg.start)
+        end = float(seg.end)
+    except Exception:
+        # if seg is a dict-like fallback
+        start = float(getattr(seg, "start", 0.0) or seg.get("start", 0.0))
+        end = float(getattr(seg, "end", 0.0) or seg.get("end", 0.0))
+    duration_by_speaker = {}
+    for w in words:
+        ws = float(w.get("start", 0.0))
+        we = float(w.get("end", 0.0))
+        sp = w.get("speaker", None)
+        if sp is None:
+            continue
+        # include words fully inside segment window
+        if ws >= start and we <= end:
+            duration_by_speaker[sp] = duration_by_speaker.get(sp, 0.0) + max(0.0, we - ws)
+    if not duration_by_speaker:
+        return None
+    return max(duration_by_speaker, key=duration_by_speaker.get)
+
+# Build segment list with speakers (fallback to [] if no segments)
+segments_json = []
+for i, seg in enumerate(transcript_segments or []):
+    sp = _segment_speaker(seg, wsm)
+    segments_json.append({
+        "id": i,
+        "start": float(getattr(seg, "start", 0.0)),
+        "end": float(getattr(seg, "end", 0.0)),
+        "text": (getattr(seg, "text", "") or "").strip(),
+        "speaker": sp
+    })
+
+# Build words list (already contains speaker from wsm)
+words_json = []
+for w in (wsm or []):
+    words_json.append({
+        "word": w.get("word"),
+        "start": float(w.get("start", 0.0)),
+        "end": float(w.get("end", 0.0)),
+        "speaker": w.get("speaker", None)
+    })
+
+# Collect speakers and construct payload
+unique_speakers = sorted({w.get("speaker") for w in (wsm or []) if w.get("speaker") is not None})
+payload = {
+    "task": "transcribe",
+    "language": info.language,
+    "text": full_transcript.strip(),
+    "segments": segments_json,
+    "words": words_json,
+    "diarization": {
+        "num_speakers": len(unique_speakers),
+        "method": {"vad": "pyannote", "embedding": "nemo-ecapa", "clustering": "msdd"}
+    }
+}
+
+json_out = f"{os.path.splitext(args.audio)[0]}.json"
+try:
+    with open(json_out, "w", encoding="utf-8") as jf:
+        json.dump(payload, jf, ensure_ascii=False, indent=2)
+    print(f"[INFO] JSON written to {json_out}")
+except Exception as e:
+    logging.warning(f"Failed to save JSON output: {e}")
+
 cleanup(temp_path)

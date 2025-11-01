@@ -1,0 +1,486 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Jane? Mark? Hi! It's been ages since I last saw you. How are you and Jackie? Yeah, good thanks. And your new baby, George, isn't it? You've got a good memory. Yes, he's two now. What about you? Are you still working in the health centre? Yes, for the time being, but we're moving in a couple of months. Anyhow, I'd better go. I'm late for work. Lovely to see you again. Yeah, likewise. Keep in touch.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.304,
+      "end": 30.224,
+      "text": "Jane? Mark? Hi! It's been ages since I last saw you. How are you and Jackie? Yeah, good thanks. And your new baby, George, isn't it? You've got a good memory. Yes, he's two now. What about you? Are you still working in the health centre? Yes, for the time being, but we're moving in a couple of months. Anyhow, I'd better go. I'm late for work. Lovely to see you again. Yeah, likewise. Keep in touch.",
+      "speaker": 1
+    }
+  ],
+  "words": [
+    {
+      "word": "Jane?",
+      "start": 700.0,
+      "end": 1.14,
+      "speaker": 0
+    },
+    {
+      "word": "Mark?",
+      "start": 1.72,
+      "end": 2.34,
+      "speaker": 1
+    },
+    {
+      "word": "Hi!",
+      "start": 2.98,
+      "end": 3.64,
+      "speaker": 1
+    },
+    {
+      "word": "It's",
+      "start": 3.92,
+      "end": 4.04,
+      "speaker": 1
+    },
+    {
+      "word": "been",
+      "start": 4.12,
+      "end": 4.28,
+      "speaker": 1
+    },
+    {
+      "word": "ages",
+      "start": 4.48,
+      "end": 4.9,
+      "speaker": 1
+    },
+    {
+      "word": "since",
+      "start": 4.94,
+      "end": 5.16,
+      "speaker": 1
+    },
+    {
+      "word": "I",
+      "start": 5.26,
+      "end": 5.26,
+      "speaker": 1
+    },
+    {
+      "word": "last",
+      "start": 5.34,
+      "end": 5.54,
+      "speaker": 1
+    },
+    {
+      "word": "saw",
+      "start": 5.62,
+      "end": 5.78,
+      "speaker": 1
+    },
+    {
+      "word": "you.",
+      "start": 5.92,
+      "end": 6.02,
+      "speaker": 1
+    },
+    {
+      "word": "How",
+      "start": 6.8,
+      "end": 6.94,
+      "speaker": 1
+    },
+    {
+      "word": "are",
+      "start": 7.02,
+      "end": 7.1,
+      "speaker": 1
+    },
+    {
+      "word": "you",
+      "start": 7.14,
+      "end": 7.2,
+      "speaker": 1
+    },
+    {
+      "word": "and",
+      "start": 7.32,
+      "end": 7.4,
+      "speaker": 1
+    },
+    {
+      "word": "Jackie?",
+      "start": 7.52,
+      "end": 8.1,
+      "speaker": 1
+    },
+    {
+      "word": "Yeah,",
+      "start": 8.54,
+      "end": 8.76,
+      "speaker": 0
+    },
+    {
+      "word": "good",
+      "start": 8.82,
+      "end": 8.96,
+      "speaker": 0
+    },
+    {
+      "word": "thanks.",
+      "start": 9.04,
+      "end": 9.42,
+      "speaker": 0
+    },
+    {
+      "word": "And",
+      "start": 10.1,
+      "end": 10.22,
+      "speaker": 1
+    },
+    {
+      "word": "your",
+      "start": 10.3,
+      "end": 10.4,
+      "speaker": 1
+    },
+    {
+      "word": "new",
+      "start": 10.46,
+      "end": 10.56,
+      "speaker": 1
+    },
+    {
+      "word": "baby,",
+      "start": 10.66,
+      "end": 11.02,
+      "speaker": 1
+    },
+    {
+      "word": "George,",
+      "start": 11.5,
+      "end": 11.86,
+      "speaker": 1
+    },
+    {
+      "word": "isn't",
+      "start": 11.92,
+      "end": 12.1,
+      "speaker": 1
+    },
+    {
+      "word": "it?",
+      "start": 12.2,
+      "end": 12.3,
+      "speaker": 1
+    },
+    {
+      "word": "You've",
+      "start": 13.16,
+      "end": 13.3,
+      "speaker": 0
+    },
+    {
+      "word": "got",
+      "start": 13.34,
+      "end": 13.42,
+      "speaker": 0
+    },
+    {
+      "word": "a",
+      "start": 13.46,
+      "end": 13.46,
+      "speaker": 0
+    },
+    {
+      "word": "good",
+      "start": 13.52,
+      "end": 13.62,
+      "speaker": 0
+    },
+    {
+      "word": "memory.",
+      "start": 13.7,
+      "end": 13.98,
+      "speaker": 0
+    },
+    {
+      "word": "Yes,",
+      "start": 14.44,
+      "end": 14.68,
+      "speaker": 0
+    },
+    {
+      "word": "he's",
+      "start": 14.74,
+      "end": 14.9,
+      "speaker": 0
+    },
+    {
+      "word": "two",
+      "start": 15.0,
+      "end": 15.16,
+      "speaker": 0
+    },
+    {
+      "word": "now.",
+      "start": 15.26,
+      "end": 15.42,
+      "speaker": 0
+    },
+    {
+      "word": "What",
+      "start": 15.94,
+      "end": 16.04,
+      "speaker": 0
+    },
+    {
+      "word": "about",
+      "start": 16.079,
+      "end": 16.28,
+      "speaker": 0
+    },
+    {
+      "word": "you?",
+      "start": 16.34,
+      "end": 16.42,
+      "speaker": 0
+    },
+    {
+      "word": "Are",
+      "start": 16.84,
+      "end": 16.88,
+      "speaker": 0
+    },
+    {
+      "word": "you",
+      "start": 16.92,
+      "end": 16.98,
+      "speaker": 0
+    },
+    {
+      "word": "still",
+      "start": 17.06,
+      "end": 17.22,
+      "speaker": 0
+    },
+    {
+      "word": "working",
+      "start": 17.28,
+      "end": 17.54,
+      "speaker": 0
+    },
+    {
+      "word": "in",
+      "start": 17.6,
+      "end": 17.62,
+      "speaker": 0
+    },
+    {
+      "word": "the",
+      "start": 17.66,
+      "end": 17.7,
+      "speaker": 0
+    },
+    {
+      "word": "health",
+      "start": 17.76,
+      "end": 17.96,
+      "speaker": 0
+    },
+    {
+      "word": "centre?",
+      "start": 18.02,
+      "end": 18.26,
+      "speaker": 0
+    },
+    {
+      "word": "Yes,",
+      "start": 19.06,
+      "end": 19.34,
+      "speaker": 1
+    },
+    {
+      "word": "for",
+      "start": 19.42,
+      "end": 19.48,
+      "speaker": 1
+    },
+    {
+      "word": "the",
+      "start": 19.52,
+      "end": 19.56,
+      "speaker": 1
+    },
+    {
+      "word": "time",
+      "start": 19.64,
+      "end": 19.88,
+      "speaker": 1
+    },
+    {
+      "word": "being,",
+      "start": 19.94,
+      "end": 20.24,
+      "speaker": 1
+    },
+    {
+      "word": "but",
+      "start": 20.64,
+      "end": 20.76,
+      "speaker": 1
+    },
+    {
+      "word": "we're",
+      "start": 20.82,
+      "end": 20.96,
+      "speaker": 1
+    },
+    {
+      "word": "moving",
+      "start": 21.02,
+      "end": 21.38,
+      "speaker": 1
+    },
+    {
+      "word": "in",
+      "start": 21.44,
+      "end": 21.48,
+      "speaker": 1
+    },
+    {
+      "word": "a",
+      "start": 21.54,
+      "end": 21.54,
+      "speaker": 1
+    },
+    {
+      "word": "couple",
+      "start": 21.62,
+      "end": 21.9,
+      "speaker": 1
+    },
+    {
+      "word": "of",
+      "start": 21.94,
+      "end": 22.0,
+      "speaker": 1
+    },
+    {
+      "word": "months.",
+      "start": 22.08,
+      "end": 22.44,
+      "speaker": 1
+    },
+    {
+      "word": "Anyhow,",
+      "start": 23.3,
+      "end": 23.66,
+      "speaker": 1
+    },
+    {
+      "word": "I'd",
+      "start": 23.78,
+      "end": 23.82,
+      "speaker": 1
+    },
+    {
+      "word": "better",
+      "start": 23.88,
+      "end": 24.06,
+      "speaker": 1
+    },
+    {
+      "word": "go.",
+      "start": 24.14,
+      "end": 24.22,
+      "speaker": 1
+    },
+    {
+      "word": "I'm",
+      "start": 24.46,
+      "end": 24.5,
+      "speaker": 1
+    },
+    {
+      "word": "late",
+      "start": 24.58,
+      "end": 24.76,
+      "speaker": 1
+    },
+    {
+      "word": "for",
+      "start": 24.8,
+      "end": 24.88,
+      "speaker": 1
+    },
+    {
+      "word": "work.",
+      "start": 24.96,
+      "end": 25.32,
+      "speaker": 1
+    },
+    {
+      "word": "Lovely",
+      "start": 25.96,
+      "end": 26.18,
+      "speaker": 1
+    },
+    {
+      "word": "to",
+      "start": 26.26,
+      "end": 26.32,
+      "speaker": 1
+    },
+    {
+      "word": "see",
+      "start": 26.46,
+      "end": 26.62,
+      "speaker": 1
+    },
+    {
+      "word": "you",
+      "start": 26.7,
+      "end": 26.76,
+      "speaker": 1
+    },
+    {
+      "word": "again.",
+      "start": 26.86,
+      "end": 27.2,
+      "speaker": 1
+    },
+    {
+      "word": "Yeah,",
+      "start": 27.86,
+      "end": 28.06,
+      "speaker": 0
+    },
+    {
+      "word": "likewise.",
+      "start": 28.14,
+      "end": 28.74,
+      "speaker": 0
+    },
+    {
+      "word": "Keep",
+      "start": 29.0,
+      "end": 29.16,
+      "speaker": 0
+    },
+    {
+      "word": "in",
+      "start": 29.22,
+      "end": 29.28,
+      "speaker": 0
+    },
+    {
+      "word": "touch.",
+      "start": 29.36,
+      "end": 30.98,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 2,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

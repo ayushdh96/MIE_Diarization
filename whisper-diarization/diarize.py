@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import re
+import sys
 
 import faster_whisper
 import torch
@@ -95,6 +96,14 @@ parser.add_argument(
     help="if you have a GPU use 'cuda', otherwise 'cpu'",
 )
 
+parser.add_argument(
+    "--mode",
+    type=str,
+    choices=["full", "asr"],
+    default="full",
+    help="Select 'full' (ASR + CTC aligner + VAD + NeMo) or 'asr' for Faster-Whisper-only transcription."
+)
+
 args = parser.parse_args()
 language = process_language_arg(args.language, args.model_name)
 
@@ -141,6 +150,7 @@ if args.batch_size > 0:
         language,
         suppress_tokens=suppress_tokens,
         batch_size=args.batch_size,
+        word_timestamps=True if args.mode == "asr" else False,
     )
 else:
     transcript_segments, info = whisper_model.transcribe(
@@ -148,6 +158,7 @@ else:
         language,
         suppress_tokens=suppress_tokens,
         vad_filter=True,
+        word_timestamps=True if args.mode == "asr" else False,
     )
 
 transcript_segments = list(transcript_segments)
@@ -173,6 +184,68 @@ if args.audio and transcript_segments:
         print(f"[INFO] Whisper segments saved to {seg_file}")
     except Exception as e:
         logging.warning(f"Failed to save Whisper segments: {e}")
+
+# ---------- ASR-only early exit ----------
+def _fmt_ts(t):
+    h = int(t // 3600); m = int((t % 3600) // 60); s = int(t % 60); ms = int(round((t - int(t)) * 1000))
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+def _srt_from_segments(segments):
+    lines = []
+    for i, seg in enumerate(segments, start=1):
+        start = float(getattr(seg, "start", 0.0))
+        end = float(getattr(seg, "end", 0.0))
+        text = (getattr(seg, "text", "") or "").strip()
+        lines.append(str(i))
+        lines.append(f"{_fmt_ts(start)} --> {_fmt_ts(end)}")
+        lines.append(text)
+        lines.append("")
+    return "\n".join(lines)
+
+if args.mode == "asr":
+    # TXT
+    with open(f"{os.path.splitext(args.audio)[0]}.txt", "w", encoding="utf-8-sig") as f:
+        f.write(full_transcript.strip())
+    # SRT
+    with open(f"{os.path.splitext(args.audio)[0]}.srt", "w", encoding="utf-8-sig") as srtf:
+        srtf.write(_srt_from_segments(transcript_segments))
+    # JSON (OpenAI-shaped, no diarization; use FW word timestamps if available)
+    segments_json = []
+    words_json = []
+    for i, seg in enumerate(transcript_segments):
+        segments_json.append({
+            "id": i,
+            "start": float(getattr(seg, "start", 0.0)),
+            "end": float(getattr(seg, "end", 0.0)),
+            "text": (getattr(seg, "text", "") or "").strip(),
+            "speaker": None
+        })
+        if hasattr(seg, "words") and seg.words:
+            for w in seg.words:
+                words_json.append({
+                    "word": getattr(w, "word", None),
+                    "start": float(getattr(w, "start", 0.0)),
+                    "end": float(getattr(w, "end", 0.0)),
+                    "speaker": None
+                })
+    payload_asr = {
+        "task": "transcribe",
+        "language": info.language,
+        "text": full_transcript.strip(),
+        "segments": segments_json,
+        "words": words_json,
+        "diarization": None
+    }
+    json_out = f"{os.path.splitext(args.audio)[0]}.json"
+    try:
+        with open(json_out, "w", encoding="utf-8") as jf:
+            json.dump(payload_asr, jf, ensure_ascii=False, indent=2)
+        print(f"[INFO] (ASR) JSON written to {json_out}")
+    except Exception as e:
+        logging.warning(f"Failed to save ASR JSON output: {e}")
+    # Exit before alignment/VAD/NeMo
+    sys.exit(0)
+# ---------- End ASR-only early exit ----------
 
 # clear gpu vram
 del whisper_model, whisper_pipeline

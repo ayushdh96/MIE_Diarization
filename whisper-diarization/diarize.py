@@ -325,7 +325,7 @@ segmentation.instantiate(HYPER_PARAMETERS)
 segmentation_output = segmentation({'uri': os.path.splitext(os.path.basename(vocal_target))[0],
                                     'audio': vocal_target})'''
 vad_pipeline = Pyannote(
-    device=args.device,
+    device=cpu,
     use_auth_token=hf_token,
     vad_onset=0.5,
     vad_offset=0.363,

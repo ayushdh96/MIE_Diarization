@@ -132,9 +132,9 @@ else:
 
 
 # Transcribe the audio file
-
+asr_device="cpu"
 whisper_model = faster_whisper.WhisperModel(
-    args.model_name, device=args.device, compute_type=mtypes[args.device]
+    args.model_name, device=asr_device, compute_type=mtypes[asr_device]
 )
 whisper_pipeline = faster_whisper.BatchedInferencePipeline(whisper_model)
 audio_waveform = faster_whisper.decode_audio(vocal_target)
@@ -157,7 +157,7 @@ else:
         audio_waveform,
         language,
         suppress_tokens=suppress_tokens,
-        vad_filter=True,
+        vad_filter=False if args.device == "cuda" else True,
         word_timestamps=True if args.mode == "asr" else False,
     )
 
@@ -325,7 +325,7 @@ segmentation.instantiate(HYPER_PARAMETERS)
 segmentation_output = segmentation({'uri': os.path.splitext(os.path.basename(vocal_target))[0],
                                     'audio': vocal_target})'''
 vad_pipeline = Pyannote(
-    device=cpu,
+    device=args.device,
     use_auth_token=hf_token,
     vad_onset=0.5,
     vad_offset=0.363,

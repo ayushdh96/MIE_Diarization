@@ -1,10 +1,5 @@
-0.00 --> 1.50: Jane?
-1.50 --> 8.50: Mark? Hi! It's been ages since I last saw you. How are you and Jackie?
-8.50 --> 10.00: Yeah, good thanks.
-10.00 --> 12.50: And your new baby, George, isn't it?
-12.50 --> 15.50: Ha! You've got a good memory. Yes, he's two now.
-15.50 --> 18.50: What about you? Are you still working in the health centre?
-18.50 --> 22.50: Yes, for the time being, but we're moving in a couple of months.
-22.50 --> 25.50: Anyhow, I'd better go. I'm late for work.
-25.50 --> 27.50: Lovely to see you again.
-27.50 --> 30.00: Yeah, likewise. Keep in touch.
+0.00 --> 8.96: Jane? Mark? Hi, it's been ages since I last saw you. How are you and Jackie? Yeah, good
+8.96 --> 15.36: thanks. And your new baby, George, isn't it? You've got a good memory. Yes, he's two now.
+15.36 --> 19.84: What about you? Are you still working in the health centre? Yes, for the time being,
+19.84 --> 25.12: but we're moving in a couple of months. Anyhow, I'd better go, I'm late for work.
+25.12 --> 30.80: Lovely to see you again. Yeah, likewise. Keep in touch.

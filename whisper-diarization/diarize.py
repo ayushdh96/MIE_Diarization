@@ -8,6 +8,8 @@ import faster_whisper
 import torch
 import torchaudio
 import json
+import whisper
+from dataclasses import dataclass
 from whisperx.vads.pyannote import Pyannote
 
 from dotenv import load_dotenv
@@ -40,6 +42,20 @@ from helpers import (
     write_srt,
 )
 
+mtypes = {"cpu": "int8", "cuda": "float16"}
+
+# --- Dataclasses for segment/info compatibility ---
+@dataclass
+class SegmentObj:
+    start: float
+    end: float
+    text: str
+
+@dataclass
+class InfoObj:
+    language: str
+
+mtypes = {"cpu": "int8", "cuda": "float16"}
 mtypes = {"cpu": "int8", "cuda": "float16"}
 
 # Initialize parser
@@ -132,39 +148,77 @@ else:
 
 
 # Transcribe the audio file
-asr_device="cpu"
-whisper_model = faster_whisper.WhisperModel(
-    args.model_name, device=asr_device, compute_type=mtypes[asr_device]
-)
-whisper_pipeline = faster_whisper.BatchedInferencePipeline(whisper_model)
+# asr block using faster_whisper (original)
+# asr_device = args.device  
+# whisper_model = faster_whisper.WhisperModel(
+#     args.model_name, device=asr_device, compute_type=mtypes[asr_device]
+# )
+# whisper_pipeline = faster_whisper.BatchedInferencePipeline(whisper_model)
+# audio_waveform = faster_whisper.decode_audio(vocal_target)
+# suppress_tokens = (
+#     find_numeral_symbol_tokens(whisper_model.hf_tokenizer)
+#     if args.suppress_numerals
+#     else [-1]
+# )
+#
+# if args.batch_size > 0:
+#     transcript_segments, info = whisper_pipeline.transcribe(
+#         audio_waveform,
+#         language,
+#         suppress_tokens=suppress_tokens,
+#         batch_size=args.batch_size,
+#         word_timestamps=True if args.mode == "asr" else False,
+#     )
+# else:
+#     transcript_segments, info = whisper_model.transcribe(
+#         audio_waveform,
+#         language,
+#         suppress_tokens=suppress_tokens,
+#         vad_filter=False if args.device == "cuda" else True,
+#         word_timestamps=True if args.mode == "asr" else False,
+#     )
+#
+# transcript_segments = list(transcript_segments)
+# print(f"[DEBUG] Number of segments: {len(transcript_segments)}")
+#
+# full_transcript = "".join(segment.text for segment in transcript_segments)
+
+# --- New Whisper (PyTorch) ASR block (no onnx / Silero VAD) ---
+# Decide ASR device: honor --device, but fall back if CUDA isn't actually available
+asr_device = args.device
+if asr_device == "cuda" and not torch.cuda.is_available():
+    print("[WARN] CUDA requested for ASR but not available, falling back to CPU")
+    asr_device = "cpu"
+print(f"[DEBUG] ASR device: {asr_device}")
+
+# Decode audio with faster_whisper utility (ffmpeg + 16k mono)
 audio_waveform = faster_whisper.decode_audio(vocal_target)
-suppress_tokens = (
-    find_numeral_symbol_tokens(whisper_model.hf_tokenizer)
-    if args.suppress_numerals
-    else [-1]
+
+# Load OpenAI Whisper model on the chosen device
+# Note: args.model_name (e.g., 'medium.en') should be compatible with whisper.load_model
+whisper_model = whisper.load_model(args.model_name, device=asr_device)
+
+# Run transcription once; batch_size is not used in this path
+# fp16 only makes sense when running on CUDA
+result = whisper_model.transcribe(
+    audio_waveform,
+    language=language,
+    fp16=True if asr_device == "cuda" else False,
 )
 
-if args.batch_size > 0:
-    transcript_segments, info = whisper_pipeline.transcribe(
-        audio_waveform,
-        language,
-        suppress_tokens=suppress_tokens,
-        batch_size=args.batch_size,
-        word_timestamps=True if args.mode == "asr" else False,
-    )
-else:
-    transcript_segments, info = whisper_model.transcribe(
-        audio_waveform,
-        language,
-        suppress_tokens=suppress_tokens,
-        vad_filter=False if args.device == "cuda" else True,
-        word_timestamps=True if args.mode == "asr" else False,
-    )
+# Wrap segments into a small object with .start/.end/.text to keep rest of the code unchanged
+transcript_segments = [
+    SegmentObj(start=seg["start"], end=seg["end"], text=seg["text"])
+    for seg in result.get("segments", [])
+]
 
-transcript_segments = list(transcript_segments)
+# Build an info-like object so downstream code (punctuation, JSON, etc.) still works
+detected_lang = result.get("language", None) or language
+info = InfoObj(language=detected_lang)
+
 print(f"[DEBUG] Number of segments: {len(transcript_segments)}")
-
 full_transcript = "".join(segment.text for segment in transcript_segments)
+# --- End new Whisper ASR block ---
 
 # Print and save the Whisper segments for debugging
 print("[DEBUG] Whisper segments:")
@@ -247,8 +301,11 @@ if args.mode == "asr":
     sys.exit(0)
 # ---------- End ASR-only early exit ----------
 
-# clear gpu vram
-del whisper_model, whisper_pipeline
+# clear gpu vram for ASR model
+try:
+    del whisper_model
+except NameError:
+    pass
 torch.cuda.empty_cache()
 
 # Forced Alignment

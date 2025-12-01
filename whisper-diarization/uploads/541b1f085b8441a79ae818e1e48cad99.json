@@ -1,0 +1,84 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "1, 2, 3, 1, 2, 3, testing 1, 2, 3.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 4.92,
+      "text": "1, 2, 3, 1, 2, 3, testing 1, 2, 3.",
+      "speaker": 0
+    }
+  ],
+  "words": [
+    {
+      "word": "1,",
+      "start": 0.0,
+      "end": 567.0,
+      "speaker": 0
+    },
+    {
+      "word": "2,",
+      "start": 567.0,
+      "end": 630.0,
+      "speaker": 0
+    },
+    {
+      "word": "3,",
+      "start": 630.0,
+      "end": 693.0,
+      "speaker": 0
+    },
+    {
+      "word": "1,",
+      "start": 693.0,
+      "end": 861.0,
+      "speaker": 0
+    },
+    {
+      "word": "2,",
+      "start": 861.0,
+      "end": 1.323,
+      "speaker": 0
+    },
+    {
+      "word": "3,",
+      "start": 1.323,
+      "end": 3.465,
+      "speaker": 0
+    },
+    {
+      "word": "testing",
+      "start": 4.094,
+      "end": 4.473,
+      "speaker": 0
+    },
+    {
+      "word": "1,",
+      "start": 4.494,
+      "end": 4.683,
+      "speaker": 0
+    },
+    {
+      "word": "2,",
+      "start": 4.683,
+      "end": 5.691,
+      "speaker": 0
+    },
+    {
+      "word": "3.",
+      "start": 5.691,
+      "end": 5.817,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

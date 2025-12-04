@@ -1,4 +1,0 @@
-﻿1
-00:00:00,260 --> 00:00:02,604
-Speaker 0: hey how are you doing?
-

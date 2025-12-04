@@ -1,4 +1,0 @@
-﻿1
-00:00:00,000 --> 00:00:05,187
-Speaker 0: Hey guys, this is me testing the pipeline from the front end.
-

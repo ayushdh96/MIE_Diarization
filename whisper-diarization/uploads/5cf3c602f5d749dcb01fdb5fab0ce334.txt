@@ -1,1 +1,0 @@
-﻿Speaker 0: Hey guys, this is me testing the pipeline from the front end.  

@@ -1,4 +1,0 @@
-﻿1
-00:00:00,330 --> 00:00:07,329
-Speaker 0: Hello, Hi guys Aayush this side, this is a demo on the diarization.
-

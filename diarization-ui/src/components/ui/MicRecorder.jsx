@@ -24,6 +24,7 @@ const MicRecorderComponent = () => {
   const [selectedOption, setSelectedOption] = useState("Summary");
   const [interactionType, setInteractionType] = useState("Doctor-Patient");
   const [showWaveformPlayer, setShowWaveformPlayer] = useState(false);
+  const [mode, setMode] = useState("full"); // "full" = diarization + transcription, "asr" = transcription only
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const canvasRef = useRef(null);
@@ -191,32 +192,76 @@ const MicRecorderComponent = () => {
         </label>
       </div>
       <div className="w-full mt-2 mb-2">
-        <h3 className="text-sm font-medium mb-1 text-gray-700 text-center">Select Interaction Type</h3>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex justify-center items-center bg-gray-200 text-gray-800 px-2 py-0.5 rounded w-full text-center">
-            {interactionType} <ChevronDown className="w-4 h-4 ml-1" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full">
-            <DropdownMenuItem
-              onClick={() => {
-                console.log("Selected: Doctor-Patient");
-                setInteractionType("Doctor-Patient");
-              }}
-              className="hover:bg-gray-100"
-            >
-              Doctor-Patient Interaction
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                console.log("Selected: General");
-                setInteractionType("General");
-              }}
-              className="hover:bg-gray-100"
-            >
-              General Interaction
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Interaction type radios */}
+          <div className="flex-1">
+            <h3 className="text-sm font-medium mb-1 text-gray-700 text-center sm:text-left">
+              Select Interaction Type
+            </h3>
+            <div className="flex flex-col gap-1 text-sm text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="interactionType"
+                  value="Doctor-Patient"
+                  checked={interactionType === "Doctor-Patient"}
+                  onChange={() => {
+                    console.log("Selected: Doctor-Patient");
+                    setInteractionType("Doctor-Patient");
+                  }}
+                />
+                <span>Doctor-Patient</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="interactionType"
+                  value="General"
+                  checked={interactionType === "General"}
+                  onChange={() => {
+                    console.log("Selected: General");
+                    setInteractionType("General");
+                  }}
+                />
+                <span>General</span>
+              </label>
+            </div>
+          </div>
+          {/* Processing mode radios */}
+          <div className="flex-1">
+            <h3 className="text-sm font-medium mb-1 text-gray-700 text-center sm:text-left">
+              Select Processing Mode
+            </h3>
+            <div className="flex flex-col gap-1 text-sm text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="processingMode"
+                  value="full"
+                  checked={mode === "full"}
+                  onChange={() => {
+                    console.log("Selected mode: full (Diarization + Transcription)");
+                    setMode("full");
+                  }}
+                />
+                <span>Diarization + Transcription</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="processingMode"
+                  value="asr"
+                  checked={mode === "asr"}
+                  onChange={() => {
+                    console.log("Selected mode: asr (Transcription Only)");
+                    setMode("asr");
+                  }}
+                />
+                <span>Transcription Only</span>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
       <div>
         <Button
@@ -233,6 +278,8 @@ const MicRecorderComponent = () => {
               formData.append("audio", blob, "recording.webm");
               console.log("Interaction type being sent:", interactionType);
               formData.append("interaction_type", interactionType);
+              console.log("Processing mode being sent:", mode);
+              formData.append("mode", mode); // "full" or "asr"
 
               const res = await fetch("http://127.0.0.1:5001/api/diarize", {
                 method: "POST",

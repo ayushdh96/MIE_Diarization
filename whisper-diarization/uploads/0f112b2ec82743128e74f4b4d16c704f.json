@@ -1,0 +1,121 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "This is just a general audio testing. Let me see if you can summarize this.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 4.0,
+      "text": "This is just a general audio testing.",
+      "speaker": 0
+    },
+    {
+      "id": 1,
+      "start": 4.0,
+      "end": 8.0,
+      "text": "Let me see if you can summarize this.",
+      "speaker": 0
+    }
+  ],
+  "words": [
+    {
+      "word": "This",
+      "start": 777.0,
+      "end": 924.0,
+      "speaker": 0
+    },
+    {
+      "word": "is",
+      "start": 1.008,
+      "end": 1.113,
+      "speaker": 0
+    },
+    {
+      "word": "just",
+      "start": 1.218,
+      "end": 1.449,
+      "speaker": 0
+    },
+    {
+      "word": "a",
+      "start": 1.617,
+      "end": 1.617,
+      "speaker": 0
+    },
+    {
+      "word": "general",
+      "start": 1.659,
+      "end": 2.016,
+      "speaker": 0
+    },
+    {
+      "word": "audio",
+      "start": 2.142,
+      "end": 2.331,
+      "speaker": 0
+    },
+    {
+      "word": "testing.",
+      "start": 2.898,
+      "end": 3.381,
+      "speaker": 0
+    },
+    {
+      "word": "Let",
+      "start": 5.607,
+      "end": 5.733,
+      "speaker": 0
+    },
+    {
+      "word": "me",
+      "start": 5.817,
+      "end": 5.859,
+      "speaker": 0
+    },
+    {
+      "word": "see",
+      "start": 5.964,
+      "end": 6.111,
+      "speaker": 0
+    },
+    {
+      "word": "if",
+      "start": 6.195,
+      "end": 6.258,
+      "speaker": 0
+    },
+    {
+      "word": "you",
+      "start": 6.3,
+      "end": 6.363,
+      "speaker": 0
+    },
+    {
+      "word": "can",
+      "start": 6.405,
+      "end": 6.51,
+      "speaker": 0
+    },
+    {
+      "word": "summarize",
+      "start": 6.594,
+      "end": 7.035,
+      "speaker": 0
+    },
+    {
+      "word": "this.",
+      "start": 7.077,
+      "end": 8.589,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Testing one, two, three, one, two, three.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 2.52,
+      "text": "Testing one, two, three, one, two, three.",
+      "speaker": 0
+    }
+  ],
+  "words": [
+    {
+      "word": "Testing",
+      "start": 1.197,
+      "end": 1.575,
+      "speaker": 0
+    },
+    {
+      "word": "one,",
+      "start": 1.659,
+      "end": 1.722,
+      "speaker": 0
+    },
+    {
+      "word": "two,",
+      "start": 1.785,
+      "end": 1.827,
+      "speaker": 0
+    },
+    {
+      "word": "three,",
+      "start": 1.911,
+      "end": 2.079,
+      "speaker": 0
+    },
+    {
+      "word": "one,",
+      "start": 2.184,
+      "end": 2.268,
+      "speaker": 0
+    },
+    {
+      "word": "two,",
+      "start": 2.31,
+      "end": 2.352,
+      "speaker": 0
+    },
+    {
+      "word": "three.",
+      "start": 2.436,
+      "end": 3.297,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

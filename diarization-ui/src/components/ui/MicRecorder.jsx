@@ -243,6 +243,10 @@ const MicRecorderComponent = () => {
               console.log("Diarization filename:", data.filename);
               console.log("Transcript:", data.transcript);
               console.log("Summary:", data.summary);
+              // Log full diarization JSON (if provided)
+              if (data.diarization_json) {
+                console.log("Diarization JSON:", JSON.stringify(data.diarization_json, null, 2));
+              }
 
               if (data.transcript) {
                 setTranscript(data.transcript);

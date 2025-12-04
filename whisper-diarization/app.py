@@ -1,6 +1,7 @@
 import os
 import uuid
 import subprocess
+import json
 import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -44,6 +45,20 @@ def diarize_audio():
         transcript_file = os.path.join("uploads", os.path.splitext(filename)[0] + ".txt")
         with open(transcript_file, "r", encoding="utf-8") as f:
             transcript_text = f.read().lstrip('\ufeff')
+
+        # Load diarization JSON produced by diarize.py (if available)
+        diarization_json = None
+        diar_json_path = os.path.join("uploads", os.path.splitext(filename)[0] + ".json")
+        if os.path.exists(diar_json_path):
+            try:
+                with open(diar_json_path, "r", encoding="utf-8") as jf:
+                    diarization_json = json.load(jf)
+                # Optional: print a small portion to backend console for debugging
+                # print("[DEBUG] Diarization JSON (truncated):", json.dumps(diarization_json, indent=2)[:2000])
+            except Exception as e:
+                print("Error reading diarization JSON:", str(e))
+        else:
+            print(f"[WARN] Diarization JSON not found at {diar_json_path}")
 
         # Prepare Ozwell summarization request
         ozwell_url = "https://ai.bluehive.com/api/v1/completion"
@@ -101,7 +116,8 @@ If any item is not covered, skip it politely.
             "message": "Diarization and summarization done",
             "filename": filename,
             "transcript": transcript_text,
-            "summary": ozwell_summary
+            "summary": ozwell_summary,
+            "diarization_json": diarization_json
         }), 200
     except subprocess.CalledProcessError as e:
         return jsonify({

@@ -1,0 +1,140 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Testing the audio for Diatization plus Transcription 1,2,3. Summarize this for me. So the conversation is lalalala.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 6.54,
+      "text": "Testing the audio for Diatization plus Transcription 1,2,3.",
+      "speaker": 0
+    },
+    {
+      "id": 1,
+      "start": 6.54,
+      "end": 7.96,
+      "text": "Summarize this for me.",
+      "speaker": 0
+    },
+    {
+      "id": 2,
+      "start": 7.96,
+      "end": 10.44,
+      "text": "So the conversation is lalalala.",
+      "speaker": 0
+    }
+  ],
+  "words": [
+    {
+      "word": "Testing",
+      "start": 1.008,
+      "end": 1.386,
+      "speaker": 0
+    },
+    {
+      "word": "the",
+      "start": 1.428,
+      "end": 1.491,
+      "speaker": 0
+    },
+    {
+      "word": "audio",
+      "start": 1.596,
+      "end": 1.827,
+      "speaker": 0
+    },
+    {
+      "word": "for",
+      "start": 1.911,
+      "end": 2.205,
+      "speaker": 0
+    },
+    {
+      "word": "Diatization",
+      "start": 2.604,
+      "end": 3.213,
+      "speaker": 0
+    },
+    {
+      "word": "plus",
+      "start": 3.276,
+      "end": 3.465,
+      "speaker": 0
+    },
+    {
+      "word": "Transcription",
+      "start": 3.549,
+      "end": 4.158,
+      "speaker": 0
+    },
+    {
+      "word": "1,2,3.",
+      "start": 4.179,
+      "end": 6.132,
+      "speaker": 0
+    },
+    {
+      "word": "Summarize",
+      "start": 6.762,
+      "end": 7.14,
+      "speaker": 0
+    },
+    {
+      "word": "this",
+      "start": 7.182,
+      "end": 7.329,
+      "speaker": 0
+    },
+    {
+      "word": "for",
+      "start": 7.413,
+      "end": 7.539,
+      "speaker": 0
+    },
+    {
+      "word": "me.",
+      "start": 7.581,
+      "end": 7.665,
+      "speaker": 0
+    },
+    {
+      "word": "So",
+      "start": 8.295,
+      "end": 8.379,
+      "speaker": 0
+    },
+    {
+      "word": "the",
+      "start": 8.484,
+      "end": 8.547,
+      "speaker": 0
+    },
+    {
+      "word": "conversation",
+      "start": 8.61,
+      "end": 9.24,
+      "speaker": 0
+    },
+    {
+      "word": "is",
+      "start": 9.345,
+      "end": 9.597,
+      "speaker": 0
+    },
+    {
+      "word": "lalalala.",
+      "start": 10.101,
+      "end": 15.33,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

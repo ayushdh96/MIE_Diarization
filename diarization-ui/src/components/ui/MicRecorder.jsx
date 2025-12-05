@@ -35,6 +35,8 @@ const MicRecorderComponent = () => {
   const sourceRef = useRef(null);
   const audioElementRef = useRef(null);
 
+  const secondaryOption = mode === "full" ? "Diarization" : "Transcription";
+
   const waveformRef = useRef(null);
   const togglePlay = () => {
     if (!waveformRef.current) return;
@@ -149,6 +151,15 @@ const MicRecorderComponent = () => {
       if (audioCtxRef.current) audioCtxRef.current.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (mode === "asr" && selectedOption === "Diarization") {
+      setSelectedOption("Transcription");
+    }
+    if (mode === "full" && selectedOption === "Transcription") {
+      setSelectedOption("Diarization");
+    }
+  }, [mode, selectedOption]);
 
   return (
     <div className="flex flex-col items-center gap-3 p-6 bg-white shadow-md rounded-xl w-full max-w-md mx-auto">
@@ -325,8 +336,18 @@ const MicRecorderComponent = () => {
           <DropdownMenuContent className="w-full">
             <DropdownMenuLabel>Select View</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setSelectedOption("Summary")} className="hover:bg-gray-100">Summary</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedOption("Diarization")} className="hover:bg-gray-100">Diarization</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSelectedOption("Summary")}
+              className="hover:bg-gray-100"
+            >
+              Summary
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSelectedOption(secondaryOption)}
+              className="hover:bg-gray-100"
+            >
+              {secondaryOption}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

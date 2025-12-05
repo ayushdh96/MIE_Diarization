@@ -1,0 +1,66 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Hello, hi, this is Ayush testing 123.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 2.0,
+      "text": "Hello, hi, this is Ayush testing 123.",
+      "speaker": null
+    }
+  ],
+  "words": [
+    {
+      "word": "Hello,",
+      "start": 1.869,
+      "end": 2.037,
+      "speaker": 0
+    },
+    {
+      "word": "hi,",
+      "start": 2.184,
+      "end": 2.352,
+      "speaker": 0
+    },
+    {
+      "word": "this",
+      "start": 2.478,
+      "end": 2.583,
+      "speaker": 0
+    },
+    {
+      "word": "is",
+      "start": 2.646,
+      "end": 2.709,
+      "speaker": 0
+    },
+    {
+      "word": "Ayush",
+      "start": 2.772,
+      "end": 3.003,
+      "speaker": 0
+    },
+    {
+      "word": "testing",
+      "start": 3.066,
+      "end": 3.402,
+      "speaker": 0
+    },
+    {
+      "word": "123.",
+      "start": 3.423,
+      "end": 4.872,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

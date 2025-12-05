@@ -33,9 +33,13 @@ def diarize_audio():
     interaction_type = request.form.get("interaction_type", "medical")
     print("Received interactionType:", interaction_type)
 
+    # New: processing mode ("full" = diarization + transcription, "asr" = transcription only)
+    mode = request.form.get("mode", "full")
+    print("Received processing mode:", mode)
+
     try:
         result = subprocess.run(
-            ['python3', 'diarize.py', '-a', os.path.join('uploads', filename)],
+            ['python3', 'diarize.py', '-a', os.path.join('uploads', filename), '--mode', mode],
             capture_output=True,
             text=True,
             check=True

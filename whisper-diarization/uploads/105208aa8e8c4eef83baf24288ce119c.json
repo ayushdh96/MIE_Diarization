@@ -1,0 +1,42 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Testing, testing, testing.",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 2.0,
+      "text": "Testing, testing, testing.",
+      "speaker": 1
+    }
+  ],
+  "words": [
+    {
+      "word": "Testing,",
+      "start": 882.0,
+      "end": 1.344,
+      "speaker": 1
+    },
+    {
+      "word": "testing,",
+      "start": 1.407,
+      "end": 1.827,
+      "speaker": 1
+    },
+    {
+      "word": "testing.",
+      "start": 5.922,
+      "end": 6.636,
+      "speaker": 1
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

@@ -8,6 +8,8 @@ import faster_whisper
 import torch
 import torchaudio
 import json
+import time
+from typing import Optional
 import whisper
 from dataclasses import dataclass
 from whisperx.vads.pyannote import Pyannote
@@ -61,7 +63,7 @@ mtypes = {"cpu": "int8", "cuda": "float16"}
 # Initialize parser
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "-a", "--audio", help="name of the target audio file", required=True
+    "-a", "--audio", help="name of the target audio file", required=False, default=None
 )
 parser.add_argument(
     "--no-stem",
@@ -120,7 +122,128 @@ parser.add_argument(
     help="Select 'full' (ASR + CTC aligner + VAD + NeMo) or 'asr' for Faster-Whisper-only transcription."
 )
 
+# -------- Speaker enrollment CLI args --------
+parser.add_argument(
+    "--enroll-speaker",
+    action="store_true",
+    help="Enrollment mode: create and store a speaker embedding from --speaker-audio under --speaker-label, then exit.",
+)
+parser.add_argument(
+    "--speaker-audio",
+    type=str,
+    default=None,
+    help="Path to the speaker enrollment audio file (e.g., Speaker Audios/Ayush.mp3). Required when --enroll-speaker is set.",
+)
+parser.add_argument(
+    "--speaker-label",
+    type=str,
+    default=None,
+    help="Label/name for the enrolled speaker (e.g., Ayush). Required when --enroll-speaker is set.",
+)
+parser.add_argument(
+    "--speakers-db",
+    type=str,
+    default=os.path.join("Speaker Audios", "speakers_db.json"),
+    help="Path to JSON file where enrolled speaker embeddings are stored.",
+)
+
+
 args = parser.parse_args()
+
+# ---------- Speaker enrollment mode (MVP: MFCC-based embedding, offline) ----------
+
+def _l2_normalize(vec: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    denom = torch.norm(vec) + eps
+    return vec / denom
+
+def _compute_mfcc_embedding(audio_16k_mono: "torch.Tensor") -> "torch.Tensor":
+    """Compute a simple fixed-length speaker embedding from 16kHz mono waveform.
+
+    This is an MVP embedding (MFCC mean+std). We can swap to a proper speaker model later
+    without changing the enrollment interface.
+    """
+    if audio_16k_mono.dim() != 1:
+        audio_16k_mono = audio_16k_mono.view(-1)
+
+    # MFCC: [n_mfcc, frames]
+    mfcc = torchaudio.transforms.MFCC(
+        sample_rate=16000,
+        n_mfcc=40,
+        melkwargs={"n_fft": 400, "hop_length": 160, "n_mels": 80},
+    )(audio_16k_mono.unsqueeze(0)).squeeze(0)
+
+    # Basic stats over time to form a stable vector
+    mu = mfcc.mean(dim=-1)
+    sd = mfcc.std(dim=-1)
+    emb = torch.cat([mu, sd], dim=0).float()  # 80-dim
+    return _l2_normalize(emb)
+
+if getattr(args, "enroll_speaker", False):
+    if not args.speaker_audio or not args.speaker_label:
+        print("[ERROR] --enroll-speaker requires both --speaker-audio and --speaker-label")
+        sys.exit(2)
+
+    if not os.path.exists(args.speaker_audio):
+        print(f"[ERROR] Speaker audio not found: {args.speaker_audio}")
+        sys.exit(2)
+
+    # Load audio via ffmpeg (supports mp3/webm/etc.) and ensure 16k mono float32
+    try:
+        wav = faster_whisper.decode_audio(args.speaker_audio)  # numpy float32, 16k mono
+    except Exception as e:
+        print(f"[ERROR] Failed to decode speaker audio: {e}")
+        sys.exit(2)
+
+    audio_t = torch.from_numpy(wav).float()
+
+    # Guardrail: ensure at least ~5 seconds of audio
+    min_len = 5 * 16000
+    if audio_t.numel() < min_len:
+        print("[ERROR] Enrollment audio too short. Please provide at least 5 seconds of speech.")
+        sys.exit(2)
+
+    emb = _compute_mfcc_embedding(audio_t)
+
+    # Load or create DB
+    db_path = args.speakers_db
+    os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
+    db = {"version": 1, "speakers": {}}
+    if os.path.exists(db_path):
+        try:
+            with open(db_path, "r", encoding="utf-8") as f:
+                db = json.load(f) or db
+        except Exception:
+            # If corrupted, keep a fresh DB rather than crashing
+            db = {"version": 1, "speakers": {}}
+
+    if "speakers" not in db or not isinstance(db["speakers"], dict):
+        db["speakers"] = {}
+
+    label = args.speaker_label.strip()
+    record = {
+        "label": label,
+        "embedding": emb.tolist(),
+        "embedding_type": "mfcc_mean_std_v1",
+        "sample_rate": 16000,
+        "source_audio": os.path.basename(args.speaker_audio),
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+    db["speakers"][label] = record
+
+    with open(db_path, "w", encoding="utf-8") as f:
+        json.dump(db, f, ensure_ascii=False, indent=2)
+
+    print(f"[INFO] Enrolled speaker '{label}' -> {db_path}")
+    sys.exit(0)
+
+# ---------- End speaker enrollment mode ----------
+
+# In normal (non-enrollment) operation, --audio is required.
+if not args.audio:
+    print("[ERROR] Missing required argument: -a/--audio")
+    sys.exit(2)
+
 language = process_language_arg(args.language, args.model_name)
 
 if args.stemming:

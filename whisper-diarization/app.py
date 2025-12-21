@@ -19,8 +19,7 @@ ARTIFACT_EXTS = [".webm", ".txt", ".json", "_summary.txt"]
 UPLOAD_RETENTION_HOURS = int(os.getenv("UPLOAD_RETENTION_HOURS", "24"))
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
-
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://voice.opensource.mieweb.org"]}})
 LATEST_POINTER = UPLOAD_DIR / "latest.txt"
 
 def cleanup_old_uploads(max_age_seconds: int) -> None:

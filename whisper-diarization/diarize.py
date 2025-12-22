@@ -270,6 +270,65 @@ if not args.audio:
     print("[ERROR] Missing required argument: -a/--audio")
     sys.exit(2)
 
+# ---------- Known-speaker identification (Step 1: load DB + candidate filter) ----------
+
+known_speakers_db = {"version": 1, "speakers": {}}
+known_enrolled = {}
+known_candidate_labels = []
+known_candidates = {}
+known_used_fallback = False
+
+def _safe_load_speakers_db(db_path: str) -> dict:
+    if not db_path or not os.path.exists(db_path):
+        return {"version": 1, "speakers": {}}
+    try:
+        with open(db_path, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
+        if not isinstance(data, dict):
+            return {"version": 1, "speakers": {}}
+        if "speakers" not in data or not isinstance(data.get("speakers"), dict):
+            data["speakers"] = {}
+        return data
+    except Exception:
+        return {"version": 1, "speakers": {}}
+
+def _parse_candidate_labels(s: Optional[str]) -> list:
+    if not s:
+        return []
+    parts = [p.strip() for p in s.split(",")]
+    return [p for p in parts if p]
+
+if getattr(args, "identify_known", False):
+    known_speakers_db = _safe_load_speakers_db(getattr(args, "speakers_db", ""))
+    known_enrolled = known_speakers_db.get("speakers", {}) if isinstance(known_speakers_db, dict) else {}
+
+    known_candidate_labels = _parse_candidate_labels(getattr(args, "candidate_labels", None))
+
+    if known_candidate_labels:
+        for lab in known_candidate_labels:
+            if lab in known_enrolled:
+                known_candidates[lab] = known_enrolled[lab]
+
+    # Fallback to all enrolled if candidate list is empty/missing/invalid
+    if not known_candidates:
+        known_candidates = dict(known_enrolled)
+        known_used_fallback = bool(known_candidate_labels)
+
+    print(
+        f"[INFO] identify-known enabled: enrolled={len(known_enrolled)} candidates={len(known_candidates)} "
+        f"fallback={'yes' if known_used_fallback else 'no'} db='{getattr(args, 'speakers_db', '')}'"
+    )
+
+    if known_candidate_labels:
+        print(f"[INFO] candidate-labels requested: {known_candidate_labels}")
+        if known_used_fallback:
+            print("[WARN] none of the requested candidate labels were found in DB; falling back to all enrolled speakers")
+
+    if not known_candidates:
+        print("[WARN] speakers DB empty or missing; identification will be skipped in later steps")
+
+# ---------- End Step 1 ----------
+
 language = process_language_arg(args.language, args.model_name)
 
 if args.stemming:

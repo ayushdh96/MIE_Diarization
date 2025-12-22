@@ -140,11 +140,37 @@ parser.add_argument(
     default=None,
     help="Label/name for the enrolled speaker (e.g., Ayush). Required when --enroll-speaker is set.",
 )
+
 parser.add_argument(
     "--speakers-db",
     type=str,
     default=os.path.join("Speaker Audios", "speakers_db.json"),
     help="Path to JSON file where enrolled speaker embeddings are stored.",
+)
+
+# -------- Known-speaker identification (MVP: args only for now) --------
+parser.add_argument(
+    "--identify-known",
+    action="store_true",
+    help="If set (full mode), match diarized speakers against enrolled embeddings in --speakers-db and annotate output JSON.",
+)
+parser.add_argument(
+    "--candidate-labels",
+    type=str,
+    default=None,
+    help="Optional comma-separated list of expected speaker labels (e.g., 'Ayush,Amber'). If provided, matching will be restricted to these labels when they exist in the DB; otherwise it will fall back to all enrolled speakers.",
+)
+parser.add_argument(
+    "--id-threshold",
+    type=float,
+    default=0.68,
+    help="Cosine similarity threshold for assigning a known speaker label (open-set).",
+)
+parser.add_argument(
+    "--top-k",
+    type=int,
+    default=1,
+    help="Top-K candidates considered for identification (reserved for next step).",
 )
 
 

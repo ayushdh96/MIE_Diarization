@@ -653,6 +653,43 @@ msdd_model.diarize()
 del msdd_model
 torch.cuda.empty_cache()
 
+# ---------- NeMo embedding artifacts (Step A1: verify outputs exist, read-only) ----------
+
+# NeMo diarizer typically writes embedding pickles + cluster label files under temp_outputs/speaker_outputs
+speaker_outputs_dir = os.path.join(temp_path, "speaker_outputs")
+emb_dir = os.path.join(speaker_outputs_dir, "embeddings")
+
+# We prefer scale4 for final clustering artifacts, but print what exists
+candidate_pkl = [
+    os.path.join(emb_dir, f"subsegments_scale{i}_embeddings.pkl") for i in range(5)
+]
+candidate_lbl = [
+    os.path.join(speaker_outputs_dir, f"subsegments_scale{i}_cluster.label") for i in range(5)
+]
+
+found_pkl = [p for p in candidate_pkl if os.path.exists(p)]
+found_lbl = [p for p in candidate_lbl if os.path.exists(p)]
+
+if getattr(args, "identify_known", False):
+    print(f"[INFO] NeMo artifacts: speaker_outputs_dir='{speaker_outputs_dir}'")
+    print(f"[INFO] NeMo artifacts: found_embedding_pkls={len(found_pkl)} found_cluster_labels={len(found_lbl)}")
+
+    if found_pkl:
+        print("[INFO] NeMo embedding pickle files:")
+        for p in found_pkl:
+            print(f"  - {p}")
+    else:
+        print("[WARN] No NeMo embedding pickle files found (expected under speaker_outputs/embeddings)")
+
+    if found_lbl:
+        print("[INFO] NeMo cluster label files:")
+        for p in found_lbl:
+            print(f"  - {p}")
+    else:
+        print("[WARN] No NeMo cluster label files found (expected under speaker_outputs)")
+
+# ---------- End Step A1 ----------
+
 # Reading timestamps <> Speaker Labels mapping
 
 

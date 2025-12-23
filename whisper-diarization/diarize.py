@@ -724,7 +724,50 @@ if getattr(args, "identify_known", False):
             cluster_embeddings[spk_label] = emb
             print(f"[INFO] {spk_label}: collected={secs:.2f}s embedding_dim={int(emb.numel())}")
 
-# ---------- End Step 2 ----------
+# ---------- Known-speaker identification (Step 4: cosine scoring, no JSON changes yet) ----------
+
+if getattr(args, "identify_known", False):
+    if not cluster_embeddings:
+        print("[INFO] identify-known enabled but no cluster embeddings computed; skipping scoring")
+    elif not known_candidates:
+        print("[INFO] identify-known enabled but no candidates loaded; skipping scoring")
+    else:
+        # Prepare candidate embedding tensors
+        cand_embs = {}
+        for lab, rec in (known_candidates or {}).items():
+            try:
+                vec = rec.get("embedding")
+                if not isinstance(vec, list) or len(vec) == 0:
+                    continue
+                t = torch.tensor(vec, dtype=torch.float32)
+                t = _l2_normalize(t)
+                cand_embs[lab] = t
+            except Exception:
+                continue
+
+        if not cand_embs:
+            print("[INFO] identify-known enabled but candidate embeddings invalid/empty; skipping scoring")
+        else:
+            thr = float(getattr(args, "id_threshold", 0.68))
+
+            def _cosine_sim(a: torch.Tensor, b: torch.Tensor) -> float:
+                # a and b should be L2-normalized
+                return float(torch.dot(a, b).clamp(-1.0, 1.0).item())
+
+            # Score each diarized cluster against candidate speakers
+            for spk_label, emb_cluster in cluster_embeddings.items():
+                best_lab = None
+                best_sim = -1.0
+                for lab, emb_ref in cand_embs.items():
+                    sim = _cosine_sim(emb_cluster, emb_ref)
+                    if sim > best_sim:
+                        best_sim = sim
+                        best_lab = lab
+
+                status = "MATCH" if (best_lab is not None and best_sim >= thr) else "UNKNOWN"
+                print(f"[INFO] SCORE {spk_label}: best={best_lab} sim={best_sim:.4f} (thr={thr:.2f}) -> {status}")
+
+# ---------- End Step 4 ----------
 
 wsm = get_words_speaker_mapping(word_timestamps, speaker_ts, "start")
 

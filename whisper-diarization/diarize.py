@@ -656,6 +656,7 @@ torch.cuda.empty_cache()
 # Reading timestamps <> Speaker Labels mapping
 
 
+
 speaker_ts = []
 with open(os.path.join(temp_path, "pred_rttms", "mono_file.rttm"), "r") as f:
     lines = f.readlines()
@@ -664,6 +665,66 @@ with open(os.path.join(temp_path, "pred_rttms", "mono_file.rttm"), "r") as f:
         s = int(float(line_list[5]) * 1000)
         e = s + int(float(line_list[8]) * 1000)
         speaker_ts.append([s, e, int(line_list[11].split("_")[-1])])
+
+# ---------- Known-speaker identification (Step 2: cluster embeddings, no matching yet) ----------
+
+cluster_embeddings = {}  # maps 'SPEAKER_0' -> torch.Tensor(80,)
+cluster_audio_seconds = {}  # maps 'SPEAKER_0' -> float seconds used
+
+def _build_cluster_audio(audio_16k: "torch.Tensor", intervals_ms: list, max_seconds: float = 15.0) -> "torch.Tensor":
+    """Concatenate up to max_seconds of audio for a given speaker from diarization intervals."""
+    max_len = int(max_seconds * 16000)
+    chunks = []
+    used = 0
+    for s_ms, e_ms in intervals_ms:
+        s_idx = max(0, int((s_ms / 1000.0) * 16000))
+        e_idx = max(0, int((e_ms / 1000.0) * 16000))
+        if e_idx <= s_idx:
+            continue
+        seg = audio_16k[s_idx:e_idx]
+        if seg.numel() == 0:
+            continue
+        take = min(seg.numel(), max_len - used)
+        if take <= 0:
+            break
+        chunks.append(seg[:take])
+        used += take
+        if used >= max_len:
+            break
+    if not chunks:
+        return torch.empty(0)
+    return torch.cat(chunks, dim=0)
+
+if getattr(args, "identify_known", False):
+    # Only proceed if diarization exists and we have any enrolled speakers (even though we don't match yet)
+    if not known_candidates:
+        print("[INFO] identify-known enabled but no candidates loaded (DB empty/missing); skipping cluster embedding computation")
+    else:
+        try:
+            audio_t_full = torch.from_numpy(audio_waveform).float().view(-1)
+        except Exception:
+            audio_t_full = torch.tensor(audio_waveform, dtype=torch.float32).view(-1)
+
+        intervals_by_spk = {}
+        for s_ms, e_ms, spk_idx in speaker_ts:
+            intervals_by_spk.setdefault(spk_idx, []).append((s_ms, e_ms))
+
+        for spk_idx, intervals in intervals_by_spk.items():
+            spk_label = f"SPEAKER_{spk_idx}"
+            cluster_audio = _build_cluster_audio(audio_t_full, intervals, max_seconds=15.0)
+            secs = float(cluster_audio.numel()) / 16000.0 if cluster_audio.numel() else 0.0
+            cluster_audio_seconds[spk_label] = round(secs, 3)
+
+            # Guardrail: need a bit of speech for a stable embedding
+            if cluster_audio.numel() < 3 * 16000:
+                print(f"[INFO] {spk_label}: only {secs:.2f}s collected; skipping embedding (need >= 3.0s)")
+                continue
+
+            emb = _compute_mfcc_embedding(cluster_audio)
+            cluster_embeddings[spk_label] = emb
+            print(f"[INFO] {spk_label}: collected={secs:.2f}s embedding_dim={int(emb.numel())}")
+
+# ---------- End Step 2 ----------
 
 wsm = get_words_speaker_mapping(word_timestamps, speaker_ts, "start")
 

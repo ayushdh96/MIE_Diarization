@@ -3,12 +3,14 @@ import logging
 import os
 import re
 import sys
+import shutil
 
 import faster_whisper
 import torch
 import torchaudio
 import json
 import time
+import pickle
 from typing import Optional
 import whisper
 from dataclasses import dataclass
@@ -28,6 +30,7 @@ from ctc_forced_aligner import (
 )
 from deepmultilingualpunctuation import PunctuationModel
 from nemo.collections.asr.models.msdd_models import NeuralDiarizer
+from nemo.collections.asr.models import EncDecSpeakerLabelModel
 
 from helpers import (
     cleanup,
@@ -176,7 +179,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-# ---------- Speaker enrollment mode (MVP: MFCC-based embedding, offline) ----------
+# ---------- Speaker enrollment mode (A3: NeMo embedding centroid, fallback to MFCC) ----------
 
 def _l2_normalize(vec: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
     denom = torch.norm(vec) + eps
@@ -204,6 +207,97 @@ def _compute_mfcc_embedding(audio_16k_mono: "torch.Tensor") -> "torch.Tensor":
     emb = torch.cat([mu, sd], dim=0).float()  # 80-dim
     return _l2_normalize(emb)
 
+# ---------- Option B: NeMo speaker-model embeddings (no MSDD artifacts) ----------
+_NEMO_SPK_MODEL = None
+
+def _get_nemo_speaker_model(device: str):
+    """Lazy-load a NeMo speaker embedding model once per process."""
+    global _NEMO_SPK_MODEL
+    if _NEMO_SPK_MODEL is not None:
+        return _NEMO_SPK_MODEL
+
+    # If CUDA requested but not available, fall back to CPU
+    dev = device
+    if dev == "cuda" and not torch.cuda.is_available():
+        dev = "cpu"
+
+    # TiTANet is a commonly used NeMo speaker embedding model.
+    model = EncDecSpeakerLabelModel.from_pretrained(model_name="titanet_large")
+    model = model.to(dev)
+    model.eval()
+    _NEMO_SPK_MODEL = model
+    return _NEMO_SPK_MODEL
+
+def _compute_nemo_speaker_embedding(audio_16k_mono: "torch.Tensor", device: str) -> "torch.Tensor":
+    """Compute a speaker embedding using a NeMo speaker model.
+
+    We write a short temp wav and call NeMo's `get_embedding` API.
+    Returns an L2-normalized 1D torch.Tensor.
+    """
+    if audio_16k_mono.dim() != 1:
+        audio_16k_mono = audio_16k_mono.view(-1)
+
+    # Write a temp wav for NeMo (expects file paths)
+    ROOT = os.getcwd()
+    tmp_dir = os.path.join(ROOT, "temp_outputs", "spk_emb_tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    tmp_wav = os.path.join(tmp_dir, f"spk_{int(time.time() * 1000)}.wav")
+
+    torchaudio.save(
+        tmp_wav,
+        audio_16k_mono.view(1, -1).float(),
+        16000,
+        channels_first=True,
+    )
+
+    try:
+        model = _get_nemo_speaker_model(device)
+        # NeMo versions differ in `get_embedding` signature.
+        # Try positional first (most common), then fall back.
+        try:
+            emb_np = model.get_embedding([tmp_wav])
+        except TypeError:
+            emb_np = model.get_embedding(tmp_wav)
+        # emb_np is typically shape (1, D) but some versions may return (D,)
+        if hasattr(emb_np, "shape") and len(getattr(emb_np, "shape", [])) == 1:
+            emb = torch.tensor(emb_np, dtype=torch.float32)
+        else:
+            emb = torch.tensor(emb_np[0], dtype=torch.float32)
+        emb = _l2_normalize(emb)
+        return emb
+    finally:
+        try:
+            os.remove(tmp_wav)
+        except Exception:
+            pass
+
+# ---------- End Option B helpers ----------
+
+# ---------- Helper for building cluster audio (used for both enrollment and cluster embedding) ----------
+def _build_cluster_audio(audio_16k: "torch.Tensor", intervals_ms: list, max_seconds: float = 15.0) -> "torch.Tensor":
+    """Concatenate up to max_seconds of audio for a given speaker from diarization intervals."""
+    max_len = int(max_seconds * 16000)
+    chunks = []
+    used = 0
+    for s_ms, e_ms in intervals_ms:
+        s_idx = max(0, int((s_ms / 1000.0) * 16000))
+        e_idx = max(0, int((e_ms / 1000.0) * 16000))
+        if e_idx <= s_idx:
+            continue
+        seg = audio_16k[s_idx:e_idx]
+        if seg.numel() == 0:
+            continue
+        take = min(seg.numel(), max_len - used)
+        if take <= 0:
+            break
+        chunks.append(seg[:take])
+        used += take
+        if used >= max_len:
+            break
+    if not chunks:
+        return torch.empty(0)
+    return torch.cat(chunks, dim=0)
+
 if getattr(args, "enroll_speaker", False):
     if not args.speaker_audio or not args.speaker_label:
         print("[ERROR] --enroll-speaker requires both --speaker-audio and --speaker-label")
@@ -228,7 +322,63 @@ if getattr(args, "enroll_speaker", False):
         print("[ERROR] Enrollment audio too short. Please provide at least 5 seconds of speech.")
         sys.exit(2)
 
-    emb = _compute_mfcc_embedding(audio_t)
+    label = args.speaker_label.strip()
+
+    # Try to compute a NeMo-derived speaker centroid embedding from the enrollment audio.
+    # If anything fails, fall back to the MFCC MVP embedding so enrollment never blocks.
+    emb = None
+    emb_type = None
+    emb_dim = None
+
+    try:
+        # Build a short speech-only sample using Pyannote VAD, then embed with a NeMo speaker model.
+        vad_pipeline = Pyannote(
+            device=args.device,
+            use_auth_token=hf_token,
+            vad_onset=0.5,
+            vad_offset=0.363,
+        )
+
+        # Save a temp wav to avoid mp3 decoding edge cases
+        ROOT = os.getcwd()
+        enroll_tmp = os.path.join(ROOT, "temp_outputs", "enroll_tmp")
+        os.makedirs(enroll_tmp, exist_ok=True)
+        mono_path = os.path.join(enroll_tmp, "enroll_mono.wav")
+        torchaudio.save(mono_path, audio_t.view(1, -1).float(), 16000, channels_first=True)
+
+        segmentation_raw = vad_pipeline({
+            "uri": os.path.splitext(os.path.basename(mono_path))[0],
+            "audio": mono_path,
+        })
+        segmentation_output = Pyannote.merge_chunks(
+            segmentation_raw,
+            chunk_size=30,
+            onset=0.5,
+            offset=0.363,
+        )
+
+        # Collect up to ~15 seconds of speech from VAD segments
+        intervals = []
+        for speech in segmentation_output:
+            for start, end in speech.get("segments", []):
+                intervals.append((float(start) * 1000.0, float(end) * 1000.0))
+
+        speech_audio = _build_cluster_audio(audio_t.view(-1), intervals, max_seconds=15.0)
+        secs = float(speech_audio.numel()) / 16000.0 if speech_audio.numel() else 0.0
+        if speech_audio.numel() < 3 * 16000:
+            raise ValueError(f"Not enough speech after VAD for enrollment ({secs:.2f}s). Provide cleaner/longer speech.")
+
+        emb = _compute_nemo_speaker_embedding(speech_audio, args.device)
+        emb_type = "nemo_titanet_centroid_v1"
+        emb_dim = int(emb.numel())
+
+        print(f"[INFO] Enrollment embedding computed using NeMo speaker model: dim={emb_dim} speech_used={secs:.2f}s")
+
+    except Exception as e:
+        print(f"[WARN] NeMo enrollment embedding failed; falling back to MFCC embedding. Reason: {e}")
+        emb = _compute_mfcc_embedding(audio_t)
+        emb_type = "mfcc_mean_std_v1"
+        emb_dim = int(emb.numel())
 
     # Load or create DB
     db_path = args.speakers_db
@@ -245,11 +395,11 @@ if getattr(args, "enroll_speaker", False):
     if "speakers" not in db or not isinstance(db["speakers"], dict):
         db["speakers"] = {}
 
-    label = args.speaker_label.strip()
     record = {
         "label": label,
         "embedding": emb.tolist(),
-        "embedding_type": "mfcc_mean_std_v1",
+        "embedding_type": emb_type,
+        "embedding_dim": emb_dim,
         "sample_rate": 16000,
         "source_audio": os.path.basename(args.speaker_audio),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -653,42 +803,7 @@ msdd_model.diarize()
 del msdd_model
 torch.cuda.empty_cache()
 
-# ---------- NeMo embedding artifacts (Step A1: verify outputs exist, read-only) ----------
 
-# NeMo diarizer typically writes embedding pickles + cluster label files under temp_outputs/speaker_outputs
-speaker_outputs_dir = os.path.join(temp_path, "speaker_outputs")
-emb_dir = os.path.join(speaker_outputs_dir, "embeddings")
-
-# We prefer scale4 for final clustering artifacts, but print what exists
-candidate_pkl = [
-    os.path.join(emb_dir, f"subsegments_scale{i}_embeddings.pkl") for i in range(5)
-]
-candidate_lbl = [
-    os.path.join(speaker_outputs_dir, f"subsegments_scale{i}_cluster.label") for i in range(5)
-]
-
-found_pkl = [p for p in candidate_pkl if os.path.exists(p)]
-found_lbl = [p for p in candidate_lbl if os.path.exists(p)]
-
-if getattr(args, "identify_known", False):
-    print(f"[INFO] NeMo artifacts: speaker_outputs_dir='{speaker_outputs_dir}'")
-    print(f"[INFO] NeMo artifacts: found_embedding_pkls={len(found_pkl)} found_cluster_labels={len(found_lbl)}")
-
-    if found_pkl:
-        print("[INFO] NeMo embedding pickle files:")
-        for p in found_pkl:
-            print(f"  - {p}")
-    else:
-        print("[WARN] No NeMo embedding pickle files found (expected under speaker_outputs/embeddings)")
-
-    if found_lbl:
-        print("[INFO] NeMo cluster label files:")
-        for p in found_lbl:
-            print(f"  - {p}")
-    else:
-        print("[WARN] No NeMo cluster label files found (expected under speaker_outputs)")
-
-# ---------- End Step A1 ----------
 
 # Reading timestamps <> Speaker Labels mapping
 
@@ -703,63 +818,50 @@ with open(os.path.join(temp_path, "pred_rttms", "mono_file.rttm"), "r") as f:
         e = s + int(float(line_list[8]) * 1000)
         speaker_ts.append([s, e, int(line_list[11].split("_")[-1])])
 
-# ---------- Known-speaker identification (Step 2: cluster embeddings, no matching yet) ----------
+# ---------- Known-speaker identification (Step A4: compute NeMo cluster centroids when available; fallback to MFCC) ----------
 
-cluster_embeddings = {}  # maps 'SPEAKER_0' -> torch.Tensor(80,)
-cluster_audio_seconds = {}  # maps 'SPEAKER_0' -> float seconds used
-
-def _build_cluster_audio(audio_16k: "torch.Tensor", intervals_ms: list, max_seconds: float = 15.0) -> "torch.Tensor":
-    """Concatenate up to max_seconds of audio for a given speaker from diarization intervals."""
-    max_len = int(max_seconds * 16000)
-    chunks = []
-    used = 0
-    for s_ms, e_ms in intervals_ms:
-        s_idx = max(0, int((s_ms / 1000.0) * 16000))
-        e_idx = max(0, int((e_ms / 1000.0) * 16000))
-        if e_idx <= s_idx:
-            continue
-        seg = audio_16k[s_idx:e_idx]
-        if seg.numel() == 0:
-            continue
-        take = min(seg.numel(), max_len - used)
-        if take <= 0:
-            break
-        chunks.append(seg[:take])
-        used += take
-        if used >= max_len:
-            break
-    if not chunks:
-        return torch.empty(0)
-    return torch.cat(chunks, dim=0)
+cluster_embeddings = {}  # maps 'SPEAKER_0' -> torch.Tensor(D,)
+cluster_audio_seconds = {}  # maps 'SPEAKER_0' -> float seconds used (best-effort)
 
 if getattr(args, "identify_known", False):
-    # Only proceed if diarization exists and we have any enrolled speakers (even though we don't match yet)
+    # Only proceed if diarization exists and we have any enrolled speakers
     if not known_candidates:
         print("[INFO] identify-known enabled but no candidates loaded (DB empty/missing); skipping cluster embedding computation")
     else:
+        # Best-effort: record cluster durations from RTTM, regardless of embedding method
+        intervals_by_spk = {}
+        for s_ms, e_ms, spk_idx in speaker_ts:
+            intervals_by_spk.setdefault(spk_idx, []).append((s_ms, e_ms))
+        for spk_idx, intervals in intervals_by_spk.items():
+            spk_label = f"SPEAKER_{spk_idx}"
+            total_ms = sum(max(0, (e - s)) for s, e in intervals)
+            cluster_audio_seconds[spk_label] = round(float(total_ms) / 1000.0, 3)
+
         try:
             audio_t_full = torch.from_numpy(audio_waveform).float().view(-1)
         except Exception:
             audio_t_full = torch.tensor(audio_waveform, dtype=torch.float32).view(-1)
 
-        intervals_by_spk = {}
-        for s_ms, e_ms, spk_idx in speaker_ts:
-            intervals_by_spk.setdefault(spk_idx, []).append((s_ms, e_ms))
-
         for spk_idx, intervals in intervals_by_spk.items():
             spk_label = f"SPEAKER_{spk_idx}"
             cluster_audio = _build_cluster_audio(audio_t_full, intervals, max_seconds=15.0)
             secs = float(cluster_audio.numel()) / 16000.0 if cluster_audio.numel() else 0.0
-            cluster_audio_seconds[spk_label] = round(secs, 3)
 
             # Guardrail: need a bit of speech for a stable embedding
             if cluster_audio.numel() < 3 * 16000:
                 print(f"[INFO] {spk_label}: only {secs:.2f}s collected; skipping embedding (need >= 3.0s)")
                 continue
 
-            emb = _compute_mfcc_embedding(cluster_audio)
-            cluster_embeddings[spk_label] = emb
-            print(f"[INFO] {spk_label}: collected={secs:.2f}s embedding_dim={int(emb.numel())}")
+            try:
+                emb = _compute_nemo_speaker_embedding(cluster_audio, args.device)
+                cluster_embeddings[spk_label] = emb
+                print(f"[INFO] {spk_label}: collected={secs:.2f}s embedding_dim={int(emb.numel())} (NeMo)")
+            except Exception as e:
+                emb = _compute_mfcc_embedding(cluster_audio)
+                cluster_embeddings[spk_label] = emb
+                print(f"[WARN] {spk_label}: NeMo speaker embedding failed ({e}); using MFCC dim={int(emb.numel())}")
+
+# ---------- End Step A4 ----------
 
 # ---------- Known-speaker identification (Step 4: cosine scoring, no JSON changes yet) ----------
 
@@ -791,15 +893,28 @@ if getattr(args, "identify_known", False):
                 # a and b should be L2-normalized
                 return float(torch.dot(a, b).clamp(-1.0, 1.0).item())
 
-            # Score each diarized cluster against candidate speakers
+            # Score each diarized cluster against candidate speakers, skip mismatched dims
             for spk_label, emb_cluster in cluster_embeddings.items():
                 best_lab = None
                 best_sim = -1.0
+                compared = 0
+
                 for lab, emb_ref in cand_embs.items():
+                    # Skip if dimensions don't match (e.g., NeMo 192 vs MFCC 80)
+                    if int(emb_cluster.numel()) != int(emb_ref.numel()):
+                        continue
                     sim = _cosine_sim(emb_cluster, emb_ref)
+                    compared += 1
                     if sim > best_sim:
                         best_sim = sim
                         best_lab = lab
+
+                if compared == 0:
+                    print(
+                        f"[WARN] SCORE {spk_label}: no candidates with matching embedding_dim={int(emb_cluster.numel())}; "
+                        "skipping"
+                    )
+                    continue
 
                 status = "MATCH" if (best_lab is not None and best_sim >= thr) else "UNKNOWN"
                 print(f"[INFO] SCORE {spk_label}: best={best_lab} sim={best_sim:.4f} (thr={thr:.2f}) -> {status}")
@@ -939,5 +1054,6 @@ try:
     print(f"[INFO] JSON written to {json_out}")
 except Exception as e:
     logging.warning(f"Failed to save JSON output: {e}")
+
 
 cleanup(temp_path)

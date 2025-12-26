@@ -73,6 +73,9 @@ const MicRecorderComponent = () => {
     setAudioURL(null);
     setShowWaveformPlayer(false);
     setIsPlaying(false);
+    setIsLoading(false);
+    setIsComplete(false);
+    setTranscript("");
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
     audioCtxRef.current = new AudioContext();
@@ -128,6 +131,9 @@ const MicRecorderComponent = () => {
       setAudioURL(url);
       setShowWaveformPlayer(true);
       setIsPlaying(false);
+      setIsLoading(false);
+      setIsComplete(false);
+      setTranscript("");
     }
   };
 
@@ -141,7 +147,7 @@ const MicRecorderComponent = () => {
   return (
     <div className="flex flex-col items-center gap-3 p-6 bg-white shadow-md rounded-xl w-full max-w-md mx-auto">
       <h2 className="text-xl font-bold">Audio Diarization & Transcription</h2>
-      <StatusBanner isLoading={isLoading} isComplete={isComplete} />
+      <StatusBanner isLoading={isLoading} isComplete={isComplete} mode={mode} />
       <div className="rounded border w-full max-w-full">
         {!showWaveformPlayer ? (
           <canvas ref={canvasRef} width={400} height={100} className="w-full h-24" />

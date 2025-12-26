@@ -108,13 +108,20 @@ const Waveform = forwardRef(({ audioUrl, onFinish, initialZoom = 120 }, ref) => 
     ws.on('redraw', syncContentWidth)
     window.addEventListener('resize', maybeAutoFit)
 
-    ws.load(audioUrl)
+    let cancelled = false
+
+    Promise.resolve(ws.load(audioUrl)).catch((err) => {
+      // WaveSurfer may abort in-flight fetch/decode when we destroy on unmount or when audioUrl changes.
+      if (cancelled || err?.name === 'AbortError') return
+      console.error('WaveSurfer load error:', err)
+    })
 
     ws.on('finish', () => {
       onFinish?.()
     })
 
     return () => {
+      cancelled = true
       window.removeEventListener('resize', maybeAutoFit)
       waveSurferRef.current?.destroy()
     }

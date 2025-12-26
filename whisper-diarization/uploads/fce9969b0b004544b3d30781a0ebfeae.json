@@ -1,0 +1,16 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Testing 123 123 123",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 2.36,
+      "text": "Testing 123 123 123",
+      "speaker": null
+    }
+  ],
+  "words": [],
+  "diarization": null
+}

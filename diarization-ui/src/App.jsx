@@ -11,7 +11,7 @@ function App() {
   const [backendMessage, setBackendMessage] = useState('');
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5001/api/test')
+    fetch('/api/test')
       .then((res) => res.json())
       .then((data) => {setBackendMessage(data.message)
         console.log('Backend message:', data.message);
@@ -25,7 +25,7 @@ function App() {
         {/* Social Links - Top Right Corner */}
         <div className="absolute top-6 right-6 flex gap-3 z-10">
           <a
-            href="https://github.com/ayushdh96"
+            href="https://github.com/ayushdh96/MIE_Diarization"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-600 hover:text-gray-900 transition-colors"

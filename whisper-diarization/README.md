@@ -79,6 +79,13 @@ pip install -c constraints.txt -r requirements.txt
 python diarize.py -a AUDIO_FILE_NAME
 ```
 
+You can also select the processing mode:
+
+```
+python diarize.py -a AUDIO_FILE_NAME --mode full   # diarization + transcription
+python diarize.py -a AUDIO_FILE_NAME --mode asr    # transcription only
+```
+
 If your system has enough VRAM (>=10GB), you can use `diarize_parallel.py` instead, the difference is that it runs NeMo in parallel with Whisper, this can be beneficial in some cases and the result is the same since the two models are nondependent on each other. This is still experimental, so expect errors and sharp edges. Your feedback is welcome.
 
 ## Command Line Options
@@ -90,6 +97,7 @@ If your system has enough VRAM (>=10GB), you can use `diarize_parallel.py` inste
 - `--device`: Choose which device to use, defaults to "cuda" if available
 - `--language`: Manually select language, useful if language detection failed
 - `--batch-size`: Batch size for batched inference, reduce if you run out of memory, set to 0 for non-batched inference
+- `--mode`: Processing mode (`full` = diarization + transcription, `asr` = transcription only)
 
 ## Known Limitations
 - Overlapping speakers are yet to be addressed, a possible approach would be to separate the audio file and isolate only one speaker, then feed it into the pipeline but this will need much more computation

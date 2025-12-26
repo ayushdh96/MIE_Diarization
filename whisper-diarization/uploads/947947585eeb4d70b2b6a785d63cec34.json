@@ -1,0 +1,74 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "... in my isalis what probably",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 1.0,
+      "text": "...",
+      "speaker": null
+    },
+    {
+      "id": 1,
+      "start": 1.16,
+      "end": 2.16,
+      "text": "in my isalis",
+      "speaker": 0
+    },
+    {
+      "id": 2,
+      "start": 3.22,
+      "end": 4.22,
+      "text": "what probably",
+      "speaker": 0
+    }
+  ],
+  "words": [
+    {
+      "word": "...",
+      "start": 0.0,
+      "end": 273.0,
+      "speaker": 0
+    },
+    {
+      "word": "in",
+      "start": 1.05,
+      "end": 1.134,
+      "speaker": 0
+    },
+    {
+      "word": "my",
+      "start": 1.533,
+      "end": 1.617,
+      "speaker": 0
+    },
+    {
+      "word": "isalis",
+      "start": 1.869,
+      "end": 2.331,
+      "speaker": 0
+    },
+    {
+      "word": "what",
+      "start": 3.486,
+      "end": 3.675,
+      "speaker": 0
+    },
+    {
+      "word": "probably.",
+      "start": 3.801,
+      "end": 4.683,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

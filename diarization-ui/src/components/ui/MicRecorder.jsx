@@ -234,7 +234,7 @@ const MicRecorderComponent = () => {
               console.log("Processing mode being sent:", mode);
               formData.append("mode", mode); // "full" or "asr"
 
-              const res = await fetch("http://127.0.0.1:5001/api/diarize", {
+              const res = await fetch("/api/diarize", {
                 method: "POST",
                 body: formData,
               });

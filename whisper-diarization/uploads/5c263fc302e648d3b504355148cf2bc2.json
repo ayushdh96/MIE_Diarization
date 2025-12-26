@@ -1,81 +1,75 @@
 {
   "task": "transcribe",
   "language": "en",
-  "text": "Hello, this is our test 1, 2, 3, 1, 2, 3.",
+  "text": "Hello testing the diuretation 1, 2, 3, 1, 2, 3.",
   "segments": [
     {
       "id": 0,
       "start": 0.0,
-      "end": 2.4,
-      "text": "Hello, this is our test 1, 2, 3, 1, 2, 3.",
+      "end": 2.84,
+      "text": "Hello testing the diuretation 1, 2, 3, 1, 2, 3.",
       "speaker": 0
     }
   ],
   "words": [
     {
-      "word": "Hello,",
-      "start": 252.0,
-      "end": 399.0,
-      "speaker": 0
-    },
-    {
-      "word": "this",
-      "start": 546.0,
-      "end": 672.0,
-      "speaker": 0
-    },
-    {
-      "word": "is",
-      "start": 714.0,
+      "word": "Hello",
+      "start": 567.0,
       "end": 735.0,
       "speaker": 0
     },
     {
-      "word": "our",
-      "start": 840.0,
-      "end": 882.0,
-      "speaker": 0
-    },
-    {
-      "word": "test.",
-      "start": 945.0,
+      "word": "testing",
+      "start": 861.0,
       "end": 1.176,
       "speaker": 0
     },
     {
+      "word": "the",
+      "start": 1.218,
+      "end": 1.26,
+      "speaker": 0
+    },
+    {
+      "word": "diuretation.",
+      "start": 1.323,
+      "end": 1.869,
+      "speaker": 0
+    },
+    {
       "word": "1,",
-      "start": 1.197,
-      "end": 2.226,
+      "start": 1.89,
+      "end": 2.835,
       "speaker": 0
     },
     {
       "word": "2,",
-      "start": 2.226,
-      "end": 2.373,
+      "start": 2.835,
+      "end": 2.898,
       "speaker": 0
     },
     {
       "word": "3,",
-      "start": 2.373,
-      "end": 2.457,
+      "start": 2.898,
+      "end": 2.94,
       "speaker": 0
     },
     {
       "word": "1,",
-      "start": 2.457,
-      "end": 2.499,
+      "start": 2.94,
+      "end": 2.982,
       "speaker": 0
     },
     {
       "word": "2,",
-      "start": 2.499,
-      "end": 2.541,
+      "start": 2.982,
+      "end": 3.024,
       "speaker": 0
     },
     {
       "word": "3.",
-      "start": 2.541,
-      "end": 2.604,
+      "start": 3.024,
+      "end": 3.045,
       "speaker": 0
     }
   ],

@@ -1,0 +1,72 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Hello, hi, what's up? How are you doing?",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 2.0,
+      "text": "Hello, hi, what's up? How are you doing?",
+      "speaker": 0
+    }
+  ],
+  "words": [
+    {
+      "word": "Hello,",
+      "start": 504.0,
+      "end": 693.0,
+      "speaker": 0
+    },
+    {
+      "word": "hi,",
+      "start": 819.0,
+      "end": 945.0,
+      "speaker": 0
+    },
+    {
+      "word": "what's",
+      "start": 1.008,
+      "end": 1.197,
+      "speaker": 0
+    },
+    {
+      "word": "up?",
+      "start": 1.281,
+      "end": 1.428,
+      "speaker": 0
+    },
+    {
+      "word": "How",
+      "start": 1.47,
+      "end": 1.596,
+      "speaker": 0
+    },
+    {
+      "word": "are",
+      "start": 1.659,
+      "end": 1.764,
+      "speaker": 0
+    },
+    {
+      "word": "you",
+      "start": 1.806,
+      "end": 1.848,
+      "speaker": 0
+    },
+    {
+      "word": "doing?",
+      "start": 1.89,
+      "end": 2.289,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

@@ -265,11 +265,6 @@ const MicRecorderComponent = () => {
           Process
         </Button>
       </div>
-      <div className="w-full mt-2 mb-2">
-        <h3 className="text-sm font-medium mb-1 text-gray-700 text-center">
-          {mode === "full" ? "Diarization Result" : "Transcription Result"}
-        </h3>
-      </div>
       <Textarea
         className="mt-4 w-full max-w-full max-h-60 overflow-y-auto resize-none border rounded-md p-2"
         placeholder={`${mode === "full" ? "Diarization" : "Transcription"} will appear here...`}

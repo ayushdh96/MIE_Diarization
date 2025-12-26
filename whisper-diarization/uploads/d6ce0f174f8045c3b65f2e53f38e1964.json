@@ -1,0 +1,48 @@
+{
+  "task": "transcribe",
+  "language": "en",
+  "text": "Testing 123 123 123",
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.0,
+      "end": 2.0,
+      "text": "Testing 123 123 123",
+      "speaker": null
+    }
+  ],
+  "words": [
+    {
+      "word": "Testing",
+      "start": 546.0,
+      "end": 903.0,
+      "speaker": 0
+    },
+    {
+      "word": "123",
+      "start": 924.0,
+      "end": 2.457,
+      "speaker": 0
+    },
+    {
+      "word": "123",
+      "start": 2.457,
+      "end": 2.541,
+      "speaker": 0
+    },
+    {
+      "word": "123.",
+      "start": 2.541,
+      "end": 2.667,
+      "speaker": 0
+    }
+  ],
+  "diarization": {
+    "num_speakers": 1,
+    "method": {
+      "vad": "pyannote",
+      "embedding": "nemo-ecapa",
+      "clustering": "msdd"
+    }
+  }
+}

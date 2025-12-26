@@ -3,11 +3,11 @@
 ## Project Overview
 
 MIE_Diarization is a full-stack audio diarization and summarization project that combines:
-- **Backend**: Python (Flask + FastAPI) for audio processing, transcription, and diarization
+- **Backend**: Python (Flask) for audio processing, transcription, and diarization
 - **Frontend**: React + Vite with Tailwind CSS and Shadcn UI components
 - **Core Technologies**: Pyannote, NeMo, Faster-Whisper, Demucs, CTC Forced Aligner
 
-The system processes audio files to identify speakers (diarization), transcribe speech, and generate intelligent summaries using Ozwell AI.
+The system processes audio files to identify speakers (diarization), transcribe speech, and generate intelligent summaries using Ozwell AI. It supports two processing modes: **full** (diarization + transcription) and **asr** (transcription-only), plus an experimental speaker enrollment/identification feature.
 
 ## Architecture
 
@@ -15,12 +15,12 @@ The system processes audio files to identify speakers (diarization), transcribe 
 - **Language**: Python 3.11
 - **Framework**: Flask with CORS enabled
 - **Main Components**:
-  - `app.py`: Flask API server with endpoints for diarization and summarization
-  - `diarize.py`: Main diarization pipeline orchestration
-  - `diarize_parallel.py`: Parallel processing implementation
+  - `app.py`: Flask API server with endpoints for diarization, summarization, and file cleanup
+  - `diarize.py`: Main diarization pipeline orchestration with CLI arguments
+  - `diarize_parallel.py`: Parallel processing implementation (legacy)
   - `nemo_process.py`: NeMo speaker embedding and clustering
-  - `helpers.py`: Utility functions for text processing and alignment
-- **Key Dependencies**: faster-whisper, nemo_toolkit, pyannote, demucs, flask-cors
+  - `helpers.py`: Utility functions for text processing, alignment, and SRT generation
+- **Key Dependencies**: faster-whisper, nemo_toolkit, pyannote, demucs, flask-cors, python-dotenv
 
 ### Frontend (`/diarization-ui`)
 - **Language**: JavaScript (ES2020+)
@@ -68,7 +68,12 @@ npm run dev  # Runs on port 5173
 
 ### Environment Variables
 Create `.env` files in respective directories:
-- `whisper-diarization/.env`: `HF_TOKEN` (Hugging Face), `OZWELL_API_KEY`
+- `whisper-diarization/.env`: 
+  - `HF_TOKEN` (required): Hugging Face token for Pyannote models
+  - `OZWELL_API_KEY` (required): API key for Ozwell AI summarization
+  - `UPLOAD_DIR` (optional, default: "uploads"): Directory for uploaded audio files
+  - `KEEP_UPLOAD_ARTIFACTS` (optional, default: "false"): Set to "true" to keep all upload artifacts
+  - `UPLOAD_RETENTION_HOURS` (optional, default: "24"): Hours to retain old upload files before cleanup
 - Frontend connects to backend at `http://localhost:5001` by default
 
 ## Coding Standards
@@ -91,7 +96,7 @@ Create `.env` files in respective directories:
 ## Key Components and Files
 
 ### Backend Critical Files
-- `app.py`: Flask API endpoints (`/api/test`, `/api/diarize`)
+- `app.py`: Flask API endpoints (`/api/test`, `/api/diarize`, `/api/test_ozwell`, `/api/ozwell_chat`)
 - `diarize.py`: Main diarization script with CLI arguments
 - `nemo_process.py`: Speaker embedding extraction and clustering
 - `helpers.py`: Text processing, alignment, SRT generation utilities
@@ -99,6 +104,9 @@ Create `.env` files in respective directories:
 
 ### Frontend Critical Files
 - `src/App.jsx`: Main React application component
+- `src/components/ui/MicRecorder.jsx`: Audio recorder, uploader, and processing UI
+- `src/components/ui/Waveform.jsx`: WaveSurfer.js integration for audio visualization
+- `src/components/ui/StatusBanner.jsx`: Loading/completion status display
 - `src/components/`: Reusable UI components (Shadcn UI based)
 - `vite.config.js`: Vite build configuration
 - `eslint.config.js`: Linting rules
@@ -151,6 +159,38 @@ npm run preview  # Preview production build
 
 ## Important Notes
 
+### Processing Modes
+The system supports two processing modes:
+- **Full Mode** (`--mode full`): Complete pipeline with diarization + transcription
+  - Uses Demucs for vocal separation (unless `--no-stem` is set)
+  - Faster-Whisper for ASR
+  - CTC Forced Aligner for word-level timestamps
+  - Pyannote for VAD/segmentation
+  - NeMo ECAPA-TDNN for speaker embeddings and MSDD for clustering
+  - Outputs: `.txt`, `.srt`, `.json` (with speaker labels and word-level timestamps)
+- **ASR Mode** (`--mode asr`): Transcription-only, bypasses diarization
+  - Uses Faster-Whisper with word-level timestamps enabled
+  - Skips VAD, speaker embedding, and clustering steps
+  - Outputs: `.txt`, `.srt`, `.json` (no speaker labels)
+  - Faster processing, lower resource usage
+
+### Speaker Enrollment & Identification (Experimental)
+The system includes experimental speaker enrollment and identification features:
+- **Enrollment**: `python diarize.py --enroll-speaker --speaker-audio <path> --speaker-label <name>`
+  - Stores speaker embeddings (NeMo ECAPA-TDNN or MFCC fallback) in `Speaker Audios/speakers_db.json`
+  - Used for creating a database of known speakers
+- **Identification**: `python diarize.py -a <audio> --identify-known --candidate-labels "Speaker1,Speaker2"`
+  - Matches diarized speakers against enrolled embeddings using cosine similarity
+  - `--id-threshold` (default: 0.68): Minimum similarity score for a match
+  - Logs matching results to console (JSON annotation not yet implemented)
+  - Requires matching embedding dimensions between enrolled and cluster embeddings
+
+### File Management & Cleanup
+- Upload directory: Configurable via `UPLOAD_DIR` environment variable (default: "uploads")
+- Automatic cleanup: Old files (> `UPLOAD_RETENTION_HOURS`) are deleted on each new upload
+- Artifact retention: Set `KEEP_UPLOAD_ARTIFACTS=true` to preserve all generated files
+- Generated files per audio: `.txt` (transcript), `.srt` (subtitles), `.json` (diarization data), `_summary.txt` (AI summary), `_whisper_segments.txt` (debug)
+
 ### Performance Considerations
 - Audio processing is resource-intensive (requires GPU for optimal performance)
 - Long audio files (>1 minute) require significant memory and CPU
@@ -173,11 +213,15 @@ npm run preview  # Preview production build
 ### Backend Routes
 - `GET /api/test`: Health check endpoint
 - `POST /api/diarize`: Main diarization endpoint
-  - Accepts: `multipart/form-data` with `audio` file and `interaction_type` field
-  - Returns: JSON with transcript and summary
+  - Accepts: `multipart/form-data` with `audio` file, `interaction_type` field, and `mode` field
+  - `interaction_type`: "medical" or "general" (for summarization context)
+  - `mode`: "full" (diarization + transcription) or "asr" (transcription only)
+  - Returns: JSON with transcript, summary, and diarization_json (OpenAI-style format with segments, words, and speaker labels)
+- `GET /api/test_ozwell`: Test Ozwell AI credentials
+- `POST /api/ozwell_chat`: Interactive chat endpoint with Ozwell AI
 
 ### CORS Configuration
-- Backend allows requests from `http://localhost:5173` (frontend dev server)
+- Backend allows requests from `http://localhost:5173` (frontend dev server) and `https://voice.opensource.mieweb.org` (production)
 - Update `app.py` CORS settings for different origins
 
 ## Workflow Integration

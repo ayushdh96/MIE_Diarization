@@ -166,7 +166,7 @@ parser.add_argument(
 parser.add_argument(
     "--id-threshold",
     type=float,
-    default=0.68,
+    default=0.60,
     help="Cosine similarity threshold for assigning a known speaker label (open-set).",
 )
 parser.add_argument(

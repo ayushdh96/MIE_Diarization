@@ -28,10 +28,55 @@ This repository combines Faster-Whisper ASR capabilities with Pyannote's segment
 
 The output is displayed to the user in the **frontend**, which is built with **React + Vite** and communicates with the backend (**Flask**) over **CORS**.
 
+
 ## API
 - `POST /api/diarize`
     - `multipart/form-data`: `audio` (file), `mode` (`full` or `asr`)
     - Returns: `transcript` (text) and `diarization_json` (when available)
+
+## Speaker Enrollment & Known Speaker Identification
+
+This project now supports **known speaker enrollment and identification** on top of standard diarization.
+
+The workflow is split into two phases:
+
+### 1. Speaker Enrollment
+A speaker can be enrolled once using a clean reference audio sample. During enrollment, the system:
+- Runs VAD to remove silence
+- Extracts **NeMo speaker embeddings (192-dim, Titanet-based)**
+- Stores the averaged embedding in a persistent JSON database
+
+Example:
+```bash
+python3 diarize.py \
+  --enroll-speaker \
+  --speaker-audio "Speaker Audios/Ayush.mp3" \
+  --speaker-label "Ayush" \
+  --speakers-db "Speaker Audios/speakers_db.json"
+```
+
+This creates or updates `speakers_db.json` with the enrolled speaker embedding.
+
+### 2. Known Speaker Identification during Diarization
+Once speakers are enrolled, diarization can identify who is speaking by comparing cluster embeddings against the enrolled database.
+
+Example:
+```bash
+python3 diarize.py \
+  -a "ayushandamber.mp3" \
+  --mode full \
+  --identify-known \
+  --candidate-labels "Ayush,Amber"
+```
+
+Internally, the pipeline:
+- Runs full diarization (Pyannote + NeMo MSDD)
+- Aggregates audio per diarized cluster
+- Computes **NeMo speaker embeddings per cluster**
+- Matches clusters to enrolled speakers using cosine similarity
+- Assigns speaker identities when similarity crosses a threshold
+
+If `--candidate-labels` is provided, matching is restricted to those speakers only.
 
 ## Running the Full Project Locally (Docker)
 

@@ -112,6 +112,64 @@ Silence and noise are removed using voice activity detection, and only speech se
 These speech segments are passed through a NeMo-based speaker model (Titanet) to generate a fixed-length embedding that uniquely represents the speaker’s voice.  
 The resulting embedding is stored in a persistent database and later reused during diarization to identify who is speaking.
 
+---
+
+## 🔄 Diarization + Known Speaker Matching (End-to-End Summary)
+
+Below is a concise view of how **speaker diarization and known-speaker identification** work together once speakers have been enrolled.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor User
+  participant CLI as diarize.py
+  participant VAD as Pyannote Segmentation + VAD
+  participant MSDD as NeMo MSDD
+  participant TiTANet as NeMo TiTANet
+  participant DB as Speaker DB
+  participant Match as Cosine Match
+
+  User->>CLI: Run diarization with identify-known
+  CLI->>VAD: Segment audio into speech regions
+  VAD-->>CLI: Speech segments (5-scale windows)
+
+  CLI->>MSDD: Cluster speech segments
+  MSDD-->>CLI: Speaker labels (SPEAKER_0, SPEAKER_1)
+
+  CLI->>TiTANet: Create embedding per speaker cluster
+  TiTANet-->>CLI: Speaker embeddings
+
+  CLI->>DB: Load enrolled speaker embeddings
+  DB-->>CLI: Known speaker vectors
+
+  CLI->>Match: Cosine similarity + threshold
+  Match-->>CLI: Speaker identity (MATCH / UNKNOWN)
+
+  CLI-->>User: Diarized output with speaker names
+```
+
+### Explanation
+
+Once speakers are enrolled, the system can identify **who is speaking** during diarization.
+
+The audio is first passed through **Pyannote’s segmentation model**, which performs voice activity detection and produces speech-only regions. These regions are processed using **five multi-scale windows**, which allows the NeMo diarizer to remain robust to short utterances, pauses, and speaker changes.
+
+Next, **NeMo MSDD** clusters these speech segments to determine *who spoke when*, assigning labels such as `SPEAKER_0`, `SPEAKER_1`, etc.  
+For each speaker cluster, the corresponding audio is aggregated and passed through **NeMo’s TiTANet speaker model** to generate a high-quality **192-dimensional speaker embedding**.
+
+These cluster embeddings are then compared against the **enrolled speaker embeddings** stored in the speaker database using cosine similarity.  
+If the similarity crosses a threshold, the speaker is identified by name; otherwise, the speaker remains unknown.
+
+This design cleanly separates:
+- **Segmentation (Pyannote)**
+- **Clustering (NeMo MSDD with 5-scale windows)**
+- **Speaker representation (TiTANet embeddings)**
+- **Identity matching (cosine similarity)**
+
+The result is a robust, extensible diarization pipeline that supports both **unknown speakers** and **known speaker identification** without breaking existing diarization behavior.
+
+---
+
 ## Running the Full Project Locally (Docker)
 
 This repo ships with a **React frontend** and a **Python backend (Flask)**. The two services communicate over **CORS**.  

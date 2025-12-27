@@ -746,9 +746,13 @@ vad_pipeline = Pyannote(
     vad_offset=0.363,
 )
 
+# Always run VAD on the 16kHz mono wav we created above to avoid mp3 backend issues
+mono_file_path = os.path.join(temp_path, "mono_file.wav")
+pyannote_manifest = os.path.join(temp_path, "pyannote_manifest.json")
+
 segmentation_raw = vad_pipeline({
-    "uri": os.path.splitext(os.path.basename(vocal_target))[0],
-    "audio": vocal_target
+    "uri": os.path.splitext(os.path.basename(args.audio))[0] if args.audio else "mono_file",
+    "audio": mono_file_path,
 })
 
 segmentation_output = Pyannote.merge_chunks(
@@ -762,10 +766,9 @@ print(f"[DEBUG] Number of VAD segments: {len(segmentation_output)}")
 for seg in segmentation_output[:5]:  # Just print first 5
     print(seg)
 
-mono_file_path = os.path.join(temp_path, "mono_file.wav")
-pyannote_manifest = os.path.join(temp_path, "pyannote_manifest.json")
 print(f"[DEBUG] Sample VAD segment: {segmentation_output[0]}")
 print(f"[DEBUG] Type: {type(segmentation_output[0])}")
+
 with open(pyannote_manifest, "w") as f:
     for speech in segmentation_output:
         for start, end in speech["segments"]:
@@ -863,6 +866,7 @@ if getattr(args, "identify_known", False):
 
 # ---------- End Step A4 ----------
 
+speaker_identity_map = {}  # maps 'SPEAKER_0' -> {'name': <str|None>, 'similarity': <float|None>, 'status': 'MATCH'|'UNKNOWN'}
 # ---------- Known-speaker identification (Step 4: cosine scoring, no JSON changes yet) ----------
 
 if getattr(args, "identify_known", False):
@@ -918,6 +922,11 @@ if getattr(args, "identify_known", False):
 
                 status = "MATCH" if (best_lab is not None and best_sim >= thr) else "UNKNOWN"
                 print(f"[INFO] SCORE {spk_label}: best={best_lab} sim={best_sim:.4f} (thr={thr:.2f}) -> {status}")
+                speaker_identity_map[spk_label] = {
+                    "name": best_lab if status == "MATCH" else None,
+                    "similarity": float(best_sim) if best_lab is not None else None,
+                    "status": status,
+                }
 
 # ---------- End Step 4 ----------
 
@@ -966,6 +975,23 @@ with open(f"{os.path.splitext(args.audio)[0]}.srt", "w", encoding="utf-8-sig") a
 
 # --- JSON export (OpenAI-style envelope with diarization extras) ---
 
+def _normalize_speaker_label(sp):
+    """Normalize speaker value to 'SPEAKER_<n>' for joining with speaker_identity_map."""
+    if sp is None:
+        return None
+    # wsm currently uses int speaker indexes (0,1,...) in many paths
+    if isinstance(sp, int):
+        return f"SPEAKER_{sp}"
+    # sometimes it may already be a label
+    if isinstance(sp, str):
+        s = sp.strip()
+        if s.startswith("SPEAKER_"):
+            return s
+        # if it looks like a digit string, normalize it
+        if s.isdigit():
+            return f"SPEAKER_{int(s)}"
+    return None
+
 def _as_seconds(val):
     try:
         v = float(val)
@@ -1010,12 +1036,15 @@ def _segment_speaker(seg, words):
 segments_json = []
 for i, seg in enumerate(transcript_segments or []):
     sp = _segment_speaker(seg, wsm)
+    sp_norm = _normalize_speaker_label(sp)
+    identity = speaker_identity_map.get(sp_norm) if getattr(args, "identify_known", False) else None
     segments_json.append({
         "id": i,
         "start": float(getattr(seg, "start", 0.0)),
         "end": float(getattr(seg, "end", 0.0)),
         "text": (getattr(seg, "text", "") or "").strip(),
-        "speaker": sp
+        "speaker": sp,
+        "speaker_identity": identity,
     })
 
 # Build words list (already contains speaker from wsm)
@@ -1023,11 +1052,15 @@ words_json = []
 for w in (wsm or []):
     ws = _word_time(w, "start", "start_time", "start_ms", "ts_start")
     we = _word_time(w, "end", "end_time", "end_ms", "ts_end")
+    sp_w = w.get("speaker", None)
+    sp_w_norm = _normalize_speaker_label(sp_w)
+    identity = speaker_identity_map.get(sp_w_norm) if getattr(args, "identify_known", False) else None
     words_json.append({
         "word": w.get("word"),
         "start": ws,
         "end": we,
-        "speaker": w.get("speaker", None)
+        "speaker": sp_w,
+        "speaker_identity": identity,
     })
 
 if words_json:
@@ -1043,7 +1076,7 @@ payload = {
     "words": words_json,
     "diarization": {
         "num_speakers": len(unique_speakers),
-        "method": {"vad": "pyannote", "embedding": "nemo-ecapa", "clustering": "msdd"}
+        "method": {"vad": "pyannote", "embedding": "nemo-titanet", "clustering": "msdd"}
     }
 }
 

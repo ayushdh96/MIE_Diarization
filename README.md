@@ -78,6 +78,36 @@ Internally, the pipeline:
 
 If `--candidate-labels` is provided, matching is restricted to those speakers only.
 
+## 🔄 Speaker Enrollment Pipeline (Sequence Diagram)
+
+The diagram below illustrates how a new speaker is enrolled into the system and how a persistent speaker embedding is generated for future identification.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI as diarize.py
+    participant Audio as Audio Loader
+    participant VAD as Pyannote VAD
+    participant NeMo as NeMo Speaker Model (Titanet)
+    participant DB as speakers_db.json
+
+    User->>CLI: Run --enroll-speaker
+    CLI->>Audio: Load & normalize audio (mono, 16kHz)
+    Audio->>VAD: Detect speech regions
+    VAD->>CLI: Return speech timestamps
+    CLI->>CLI: Concatenate speech segments (10–15s)
+    CLI->>NeMo: Extract speaker embedding
+    NeMo->>CLI: Return fixed-length embedding (192-dim)
+    CLI->>DB: Save / update speaker embedding
+    DB-->>User: Speaker enrolled successfully
+```
+
+### Explanation
+During speaker enrollment, the system focuses on extracting a clean and reliable voice representation for a single speaker.  
+Silence and noise are removed using voice activity detection, and only speech segments are used.  
+These speech segments are passed through a NeMo-based speaker model (Titanet) to generate a fixed-length embedding that uniquely represents the speaker’s voice.  
+The resulting embedding is stored in a persistent database and later reused during diarization to identify who is speaking.
+
 ## Running the Full Project Locally (Docker)
 
 This repo ships with a **React frontend** and a **Python backend (Flask)**. The two services communicate over **CORS**.  

@@ -87,14 +87,16 @@ sequenceDiagram
     participant User
     participant CLI as diarize.py
     participant Audio as Audio Loader
-    participant VAD as Pyannote VAD
+    participant Seg as Pyannote Segmentation Model
+    participant VAD as VAD Post-Processing
     participant NeMo as NeMo Speaker Model (Titanet)
     participant DB as speakers_db.json
 
     User->>CLI: Run --enroll-speaker
     CLI->>Audio: Load & normalize audio (mono, 16kHz)
-    Audio->>VAD: Detect speech regions
-    VAD->>CLI: Return speech timestamps
+    Audio->>Seg: Frame-level speech segmentation
+    Seg->>VAD: Speech probabilities per frame
+    VAD->>CLI: Final speech segments (timestamps)
     CLI->>CLI: Concatenate speech segments (10–15s)
     CLI->>NeMo: Extract speaker embedding
     NeMo->>CLI: Return fixed-length embedding (192-dim)

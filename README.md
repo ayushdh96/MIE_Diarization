@@ -104,6 +104,8 @@ sequenceDiagram
     DB-->>User: Speaker enrolled successfully
 ```
 
+🎥 **Watch the Speaker Enrollment Shorts**: [YouTube Shorts](https://youtube.com/shorts/BuWpAWHnrr8?si=nkWh6W9CRH1U8HrF)
+
 ### Explanation
 During speaker enrollment, the system focuses on extracting a clean and reliable voice representation for a single speaker.  
 Silence and noise are removed using voice activity detection, and only speech segments are used.  
